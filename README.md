@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="./web/assets/logo.svg" alt="SmartDiscover Logo" width="180"/>
+  <img src="web/assets/logo.svg" alt="SmartDiscover Logo" width="180"/>
   <h1>✨ SmartDiscover</h1>
   <p><strong>Multi-Agent Music Discovery Assistant</strong></p>
 
