@@ -30,24 +30,12 @@ SmartDiscover adalah sistem rekomendasi musik berbasis 4 agent AI. Alih-alih han
 
 ## Arsitektur 4 Agent
 
-```text
-User Prompt
-   |
-   v
-[1] Profiler Agent
-   - ekstraksi mood, aktivitas, preferensi
-   |
-   v
-[2] Spotify Search Agent
-   - query kandidat lagu dari Spotify
-   |
-   v
-[3] Filter and Ranker Agent
-   - scoring relevansi, dedup, urutkan hasil
-   |
-   v
-[4] Presenter Agent
-   - format output agar mudah dieksekusi user
+```mermaid
+flowchart TD
+    A[User Prompt] --> B[1. Profiler Agent\nEkstraksi mood, aktivitas, preferensi]
+    B --> C[2. Spotify Search Agent\nQuery kandidat lagu dari Spotify]
+    C --> D[3. Filter and Ranker Agent\nScoring relevansi, dedup, urutkan hasil]
+    D --> E[4. Presenter Agent\nFormat output agar mudah dieksekusi user]
 ```
 
 ### 1. Profiler Agent
