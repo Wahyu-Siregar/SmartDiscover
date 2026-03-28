@@ -22,6 +22,9 @@ class PresenterAgent:
     def _build_reason(self, profile: IntentProfile, track: TrackCandidate) -> str:
         if track.why.strip():
             return track.why
+        locale_hint = ""
+        if profile.locale:
+            locale_hint = f" dengan konteks {profile.locale}" if profile.language == "id" else f" with {profile.locale} context"
         if profile.language == "id":
-            return f"Cocok untuk {profile.activity} dengan nuansa {profile.mood} dan energi {profile.energy}."
-        return f"Good fit for {profile.activity} with a {profile.mood} mood and {profile.energy} energy."
+            return f"Cocok untuk {profile.activity} dengan nuansa {profile.mood} dan energi {profile.energy}{locale_hint}."
+        return f"Good fit for {profile.activity} with a {profile.mood} mood and {profile.energy} energy{locale_hint}."

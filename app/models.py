@@ -14,6 +14,8 @@ class IntentProfile(BaseModel):
     genre: list[str] = Field(default_factory=list)
     energy: Literal["low", "medium", "high"] = "medium"
     language: str = "id"
+    locale: str = ""
+    strict_locale: bool = False
 
 
 class TrackCandidate(BaseModel):

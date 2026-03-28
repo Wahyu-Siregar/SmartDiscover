@@ -14,6 +14,10 @@ class SpotifyClient:
     AUTHORIZE_URL = "https://accounts.spotify.com/authorize"
     PROFILE_URL = "https://api.spotify.com/v1/me"
 
+    LOCALE_TERMS = {
+        "indonesia": ["indonesia", "indonesian", "nusantara", "tanah air", "merah putih", "garuda"],
+    }
+
     def __init__(self) -> None:
         self._token: str = ""
         self._token_expiry: float = 0.0
@@ -69,9 +73,10 @@ class SpotifyClient:
         
         # STRATEGI BARU: Cari playlist organik berdasarkan mood/aktivitas
         # Ini menghindari rekomendasi harfiah seperti judul lagu "melancholy"
-        playlist_q = f"{profile.mood} {profile.activity}".strip()
+        locale_suffix = f" {profile.locale}" if profile.locale else ""
+        playlist_q = f"{profile.mood} {profile.activity}{locale_suffix}".strip()
         if not playlist_q and profile.genre:
-            playlist_q = profile.genre[0]
+            playlist_q = f"{profile.genre[0]}{locale_suffix}".strip()
             
         async with httpx.AsyncClient(timeout=20.0) as client:
             p_resp = await client.get(
@@ -131,10 +136,23 @@ class SpotifyClient:
                                 popularity=item.get("popularity", 0),
                             )
 
-        return list(candidates.values()), {
+        final_candidates = list(candidates.values())
+        strict_filtered_count = 0
+        if profile.locale and profile.strict_locale:
+            filtered = self._filter_by_locale(final_candidates, profile.locale)
+            # Keep strict mode only if still have enough reasonable candidates.
+            min_keep = max(5, min(target_count, 10))
+            if len(filtered) >= min_keep:
+                strict_filtered_count = len(final_candidates) - len(filtered)
+                final_candidates = filtered
+
+        return final_candidates, {
             "variants": [playlist_q] + variants,
             "broadening_applied": broadening_applied,
-            "notes": "Pencarian diutamakan via Playlist organik untuk koleksi genre/mood yang kaya, lalu fallback fallback ke pencarian track biasa.",
+            "notes": "Pencarian diutamakan via playlist organik untuk koleksi genre/mood yang kaya, lalu fallback ke pencarian track biasa.",
+            "locale": profile.locale,
+            "strict_locale": profile.strict_locale,
+            "strict_filtered_count": strict_filtered_count,
         }
 
     async def _get_access_token(self) -> str:
@@ -155,14 +173,29 @@ class SpotifyClient:
 
     def _build_query_variants(self, profile: IntentProfile) -> list[str]:
         genres = profile.genre or ["music"]
+        locale_suffix = f" {profile.locale}" if profile.locale else ""
         base = [
-            f"{profile.mood} {profile.activity}",
-            f"{profile.activity} {profile.energy}",
-            f"{profile.mood} playlist",
+            f"{profile.mood} {profile.activity}{locale_suffix}",
+            f"{profile.activity} {profile.energy}{locale_suffix}",
+            f"{profile.mood} playlist{locale_suffix}",
         ]
-        base.extend(f"{g} {profile.activity}" for g in genres[:3])
+        base.extend(f"{g} {profile.activity}{locale_suffix}" for g in genres[:3])
+        if profile.locale:
+            base.append(f"{profile.locale} patriotic songs")
+            base.append(f"{profile.locale} national songs")
         # Keep variants unique while preserving order.
         return list(dict.fromkeys(base))[:6]
+
+    def _filter_by_locale(self, candidates: list[TrackCandidate], locale: str) -> list[TrackCandidate]:
+        terms = self.LOCALE_TERMS.get(locale.lower(), [])
+        if not terms:
+            return candidates
+
+        def matches_locale(candidate: TrackCandidate) -> bool:
+            text = f"{candidate.title} {candidate.artist}".lower()
+            return any(term in text for term in terms)
+
+        return [c for c in candidates if matches_locale(c)]
 
     def _mock_tracks(self, profile: IntentProfile, target_count: int) -> list[TrackCandidate]:
         seed = [

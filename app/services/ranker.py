@@ -43,6 +43,7 @@ class RankerAgent:
             "You are Filter and Ranker Agent for music recommendations. "
             "Rank candidates by fit to intent profile. Return JSON only with key 'ranked'. "
             "Each item in ranked must include idx, score (0..1), why (short). "
+            "If intent_profile has locale and strict_locale=true, strongly prioritize tracks matching that locale and avoid cross-country drift. "
             "Keep only the best items up to top_k."
         )
         user_prompt = (
@@ -107,11 +108,21 @@ class RankerAgent:
         # Tiny diversity proxy from word uniqueness in title.
         diversity_bonus = min(1.0, len(set(candidate.title.lower().split())) / 5)
 
+        locale_bonus = 0.0
+        if profile.locale == "indonesia":
+            locale_terms = ["indonesia", "indonesian", "nusantara", "tanah air", "merah putih", "garuda"]
+            locale_match = any(term in text for term in locale_terms)
+            if locale_match:
+                locale_bonus = 0.20 if profile.strict_locale else 0.10
+            elif profile.strict_locale:
+                locale_bonus = -0.20
+
         score = (
             (relevance * 0.50)
             + (mood_energy_fit * 0.25)
             + (popularity * 0.15)
             + (diversity_bonus * 0.10)
+            + locale_bonus
         )
         candidate.score = round(score, 4)
         return candidate

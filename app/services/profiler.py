@@ -22,6 +22,30 @@ GENRE_KEYWORDS = {
     "indie": ["indie"],
 }
 
+LOCALE_KEYWORDS = {
+    "indonesia": [
+        "indonesia",
+        "indonesian",
+        "nusantara",
+        "tanah air",
+        "merah putih",
+        "nkri",
+        "warga indonesia",
+        "lagu nasional indonesia",
+    ]
+}
+
+STRICT_LOCALE_CUES = [
+    "nasionalisme",
+    "nationalism",
+    "patriotik",
+    "patriotic",
+    "kemerdekaan",
+    "independence",
+    "kebangsaan",
+    "national anthem",
+]
+
 
 class ProfilerAgent:
     def __init__(self, llm: OpenRouterClient) -> None:
@@ -44,12 +68,16 @@ class ProfilerAgent:
         genres = self._infer_genres(lowered)
         energy = self._infer_energy(lowered)
         language = self._infer_language(text)
+        locale = self._infer_locale(lowered)
+        strict_locale = self._infer_strict_locale(lowered, locale)
         return IntentProfile(
             mood=mood,
             activity=activity,
             genre=genres,
             energy=energy,
             language=language,
+            locale=locale,
+            strict_locale=strict_locale,
         )
 
     async def _profile_with_llm(self, text: str) -> IntentProfile | None:
@@ -58,9 +86,12 @@ class ProfilerAgent:
 
         system_prompt = (
             "You are Profiler Agent for SmartDiscover. "
-            "Extract user intent into strict JSON with keys: mood, activity, genre, energy, language. "
+            "Extract user intent into strict JSON with keys: mood, activity, genre, energy, language, locale, strict_locale. "
             "Rules: genre must be array of strings; energy must be one of low|medium|high; "
-            "language must be id or en based on dominant user language. Return JSON only."
+            "language must be id or en based on dominant user language; "
+            "locale is empty or a country-like target such as 'indonesia'; "
+            "strict_locale is true when user explicitly asks for national/local-only songs (e.g. nationalism request). "
+            "Return JSON only."
         )
         user_prompt = f"Input text: {text}"
         data = await self.llm.chat_json(system_prompt, user_prompt, max_tokens=300)
@@ -81,12 +112,22 @@ class ProfilerAgent:
             if language not in {"id", "en"}:
                 language = self._infer_language(text)
 
+            locale = str(data.get("locale", "")).strip().lower()
+            if not locale:
+                locale = self._infer_locale(text.lower())
+
+            strict_locale = bool(data.get("strict_locale", False))
+            if not strict_locale:
+                strict_locale = self._infer_strict_locale(text.lower(), locale)
+
             return IntentProfile(
                 mood=mood,
                 activity=activity,
                 genre=genre,
                 energy=energy,
                 language=language,
+                locale=locale,
+                strict_locale=strict_locale,
             )
         except Exception:
             return None
@@ -127,3 +168,14 @@ class ProfilerAgent:
         if re.search(r"\b(aku|yang|buat|dan|lagu|tenang|fokus)\b", text.lower()):
             return "id"
         return "en"
+
+    def _infer_locale(self, lowered: str) -> str:
+        for locale, keys in LOCALE_KEYWORDS.items():
+            if any(k in lowered for k in keys):
+                return locale
+        return ""
+
+    def _infer_strict_locale(self, lowered: str, locale: str) -> bool:
+        if not locale:
+            return False
+        return any(cue in lowered for cue in STRICT_LOCALE_CUES)
