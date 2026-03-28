@@ -219,26 +219,31 @@ body {
 
 /* Pipeline Flow */
 .pipeline-panel {
-  display: flex; flex-direction: column; gap: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 10px;
 }
 .pipeline-header {
   display: flex; justify-content: space-between; align-items: center;
+  line-height: 1.1;
 }
-.pipeline-header h3 { font-size: 1.1rem; font-weight: 600; }
-.stage-text { font-size: 0.85rem; color: var(--brand-primary); font-family: var(--font-mono); }
+.pipeline-header h3 { font-size: 0.92rem; font-weight: 600; }
+.stage-text { font-size: 0.72rem; color: var(--brand-primary); font-family: var(--font-mono); }
 
 .track-container {
   position: relative;
-  height: 48px;
+  height: 24px;
   display: flex; align-items: center;
-  margin: 16px 0;
+  margin: 8px 0 4px;
 }
 .track-line {
-  position: absolute; left: 0; right: 0; height: 2px;
+  position: absolute; left: 0; right: 0; height: 1px;
   background: rgba(255,255,255,0.1); border-radius: 2px;
 }
 .track-active {
-  position: absolute; left: 0; height: 2px;
+  position: absolute; left: 0; height: 1px;
   background: var(--brand-primary); width: 0%;
   transition: width 0.5s ease;
 }
@@ -247,8 +252,8 @@ body {
   display: flex; justify-content: space-between;
 }
 .track-step .dot {
-  width: 12px; height: 12px;
-  background: #333; border: 2px solid #555;
+  width: 8px; height: 8px;
+  background: #333; border: 1.5px solid #555;
   border-radius: 50%;
   transition: all 0.3s;
 }
@@ -257,16 +262,17 @@ body {
 
 .pixel-agent {
   position: absolute;
-  top: -24px; 
-  width: 32px; height: 32px;
+  top: -6px;
+  width: 22px; height: 22px;
   image-rendering: pixelated;
   z-index: 10;
   left: 0%;
   transition: left 0.5s ease;
-  transform: translateX(-16px);
+  transform: translateX(-11px);
+  pointer-events: none;
 }
 
-.pipeline-footer { font-size: 0.8rem; color: var(--text-secondary); text-align: right; font-family: var(--font-mono); }
+.pipeline-footer { font-size: 0.68rem; color: var(--text-secondary); text-align: right; font-family: var(--font-mono); line-height: 1.2; }
 
 /* Pipeline State Mapping */
 #agentFlow[data-stage="0"] .track-active { width: 0%; }

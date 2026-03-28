@@ -17,6 +17,7 @@ const summaryMode = document.getElementById("summaryMode");
 const agentFlow = document.getElementById("agentFlow");
 const agentStageText = document.getElementById("agentStageText");
 const agentMetrics = document.getElementById("agentMetrics");
+const pipelinePanel = document.querySelector(".pipeline-panel");
 const pillProfiler = document.getElementById("pillProfiler");
 const pillSearch = document.getElementById("pillSearch");
 const pillRanker = document.getElementById("pillRanker");
@@ -30,6 +31,10 @@ const agentPixel = document.getElementById("agentPixel");
 let runtimeFrameTimer = null;
 let runtimeFrameIndex = 0;
 let runtimeVisualState = "idle";
+let lastRuntimeFrameAt = 0;
+let currentRuntimeFrameSrc = "";
+
+const RUNTIME_FRAME_INTERVAL_MS = 120;
 
 const RUNTIME_FRAME_SETS = {
   idle: ["/static/assets/runtime/idle-1.svg", "/static/assets/runtime/idle-2.svg"],
@@ -41,19 +46,43 @@ const RUNTIME_FRAME_SETS = {
   error: ["/static/assets/runtime/error-1.svg", "/static/assets/runtime/error-2.svg"],
 };
 
+const ALL_RUNTIME_FRAMES = Array.from(new Set(Object.values(RUNTIME_FRAME_SETS).flat()));
+let runtimeFramesPreloaded = false;
+
+function preloadRuntimeFrames() {
+  if (runtimeFramesPreloaded) return;
+  runtimeFramesPreloaded = true;
+
+  for (const src of ALL_RUNTIME_FRAMES) {
+    const img = new Image();
+    img.src = src;
+  }
+}
+
 function renderRuntimeFrame() {
   if (!agentPixel) return;
   const frames = RUNTIME_FRAME_SETS[runtimeVisualState] || RUNTIME_FRAME_SETS.idle;
   const frame = frames[runtimeFrameIndex % frames.length];
-  if (agentPixel.getAttribute("src") !== frame) {
+  if (currentRuntimeFrameSrc !== frame) {
     agentPixel.setAttribute("src", frame);
+    currentRuntimeFrameSrc = frame;
   }
   runtimeFrameIndex = (runtimeFrameIndex + 1) % frames.length;
 }
 
+function runtimeFrameTick(timestamp) {
+  if (!lastRuntimeFrameAt || (timestamp - lastRuntimeFrameAt) >= RUNTIME_FRAME_INTERVAL_MS) {
+    renderRuntimeFrame();
+    lastRuntimeFrameAt = timestamp;
+  }
+  runtimeFrameTimer = requestAnimationFrame(runtimeFrameTick);
+}
+
 function startRuntimeFrameLoop() {
-  if (runtimeFrameTimer) clearInterval(runtimeFrameTimer);
-  runtimeFrameTimer = setInterval(renderRuntimeFrame, 120);
+  preloadRuntimeFrames();
+  if (runtimeFrameTimer) cancelAnimationFrame(runtimeFrameTimer);
+  lastRuntimeFrameAt = 0;
+  runtimeFrameTimer = requestAnimationFrame(runtimeFrameTick);
 }
 
 function setStatus(message, isError = false) {
@@ -100,12 +129,11 @@ function delay(ms) {
 }
 
 function setRuntimeVisualState(state) {
-  const pipeline = document.querySelector('.pipeline-panel');
-  if (pipeline) {
+  if (pipelinePanel) {
     if (state === "error") {
-      pipeline.style.borderColor = "var(--brand-glow)";
+      pipelinePanel.style.borderColor = "var(--brand-glow)";
     } else {
-      pipeline.style.borderColor = "var(--border-color)";
+      pipelinePanel.style.borderColor = "var(--border-color)";
     }
   }
   if (runtimeVisualState !== state) {

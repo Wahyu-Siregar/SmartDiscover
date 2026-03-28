@@ -130,15 +130,17 @@
     <script src="/static/app.js"></script>
     <script>
       // Magic Card Mouse Glow Effect Injector
-      document.addEventListener("mousemove", (e) => {
-        for(const card of document.querySelectorAll('.magic-card')) {
-          const rect = card.getBoundingClientRect();
-          const x = e.clientX - rect.left;
-          const y = e.clientY - rect.top;
-          card.style.setProperty('--mouse-x', `${x}px`);
-          card.style.setProperty('--mouse-y', `${y}px`);
-        }
-      });
+      document.addEventListener("pointermove", (e) => {
+        const card = e.target.closest(".magic-card");
+        if (!card) return;
+
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        card.style.setProperty("--mouse-x", `${x}px`);
+        card.style.setProperty("--mouse-y", `${y}px`);
+      }, { passive: true });
     </script>
   </body>
 </html>
