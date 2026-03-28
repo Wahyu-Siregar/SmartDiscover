@@ -1,94 +1,100 @@
 <div align="center">
   <img src="web/assets/logo.svg" alt="SmartDiscover Logo" width="180"/>
   <h1>✨ SmartDiscover</h1>
-  <p><strong>Multi-Agent Music Discovery Assistant</strong></p>
+  <p><strong>Bawa Musikmu ke Level Berikutnya dengan AI Multi-Agent</strong></p>
 
-  [![Python Validation](https://img.shields.io/badge/Python-3.9%2B-blue?style=for-the-badge&logo=python&logoColor=white)](#)
+  [![Python Validation](https://img.shields.io/badge/Python-3.9%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](#)
   [![FastAPI Backbone](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi)](#)
-  [![Vanilla JS Frontend](https://img.shields.io/badge/Vanilla_JS-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)](#)
+  [![Vanilla JS Frontend](https://img.shields.io/badge/Magic_UI-000000?style=for-the-badge&logo=css3&logoColor=white)](#)
   [![Spotify API Integration](https://img.shields.io/badge/Spotify_API-1DB954?style=for-the-badge&logo=spotify&logoColor=white)](#)
   [![OpenRouter LLM](https://img.shields.io/badge/OpenRouter-Multi_Agent-purple?style=for-the-badge)](#)
 </div>
 
 ---
 
-SmartDiscover adalah MVP backend cerdas untuk *Multi-Agent Music Discovery Assistant*. Sistem ini bekerja layaknya asisten musik pribadimu: meracik rekomendasi lagu berbasis konteks dengan membagi tugas ke **4 spesialis agen** untuk menghasilkan daftar akhir lagu yang akurat, relevan, dan terpersonalisasi.
+> 🎵 *“Aku mau lagu belajar malam yang tenang dan fokus...”*
+> Boom! Daftar putar (*playlist*) seketika terbuat langsung di akun Spotify kamu.
 
-## 🚀 Alur Kerja Multi-Agent
-1. 🧠 **Profiler Agent**: Mengekstraksi mood, aktivitas, dan konteks linguistik murni dari kalimat instruksi pengguna.
-2. 🔍 **Spotify Search Agent**: Menarik kandidat lagu multi-kueri langsung dari Spotify menggunakan penyesuaian parameter (*search broadening*).
-3. ⚖️ **Filter & Ranker Agent**: Mengevaluasi kandidat lagu, mencegah spam artis, dan memberikan skor relevansi dinamis.
-4. 🎁 **Presenter Agent**: Merangkum hasil temuan, menyusun hasil kurasi terbaik menjadi struktur playlist API final.
+**SmartDiscover** adalah mesin kurasi musik inovatif bertenaga *Multi-Agent AI*. Sistem ini beroperasi selayaknya produser musik pribadimu: ia menerjemahkan kalimat bebas *(natural language)* menjadi tatanan arsitektur mood, menggali perpustakaan API Spotify, dan membuang lagu yang tidak relevan untuk dirakit menjadi satu *playlist* yang sempurna.
 
-## ✨ Fitur Utama
-- 🎯 **Endpoint Presisi:** POST /recommend menghasilkan *Output JSON Schema* yang kokoh tanpa *hallucinations*.
-- ⚡ **Diagnostics Tools:** Cek performa independen (/health, /spotify/health, /llm/health).
-- 🖥️ **Live Web Dashboard:** UI responsif bersih dengan antarmuka lintasan agen yang beranimasi seketika (_Realtime Pixel tracking_).
-- 🛡️ **Resilient Fallback:** Mendukung *Mock Candidates* saat kredensial Spotify absen, serta *Heuristic Rule-matching* otomatis saat layanan LLM terputus.
-- 🚫 **Modern Endpointing:** Bebas limitasi API kadaluarsa (Tidak lagi bergantung pada /recommendations API lawas).
+## 🚀 Bagaimana Otak AI Ini Bekerja? (The 4-Agent Pipeline)
 
-## 🛠️ Cara Setup & Run Singkat
+Arsitektur kami dibangun dengan membagi beban kognitif ke 4 Agen terspesialisasi:
 
-**1. Buat Virtual Environment & Install Dependensi**
-`powershell
+1. 🧠 **Profiler Agent**: Membedah kalimatmu. Dia tahu bedanya "lagu lari pagi" dengan "lagu menangis di pojokan kamar".
+2. 🔍 **Spotify Search Agent**: (BARU!) Menambang lagu secara organik lewat *User Playlist* Spotify (bukan sekadar cari judul lagu) sehingga *vibes* yang didapat dijamin *human-curated*, tidak ada lagu repetitif berdasarkan judul harafiah lagi.
+3. ⚖️ **Filter & Ranker Agent**: Kurator teliti yang menilai setiap lagu tunggal, mencoret artis *spam*, dan memberikan skor persentase keakuratan tiap lagu untuk *mood*-mu.
+4. 🎁 **Presenter Agent**: Merangkum hasil temuan dan mengemasnya dalam antarmuka UI *Bento Grid* siap ekspor!
+
+## ✨ Tampilan Web "Magic UI"
+Sistem sudah dilengkapi dengan antarmuka memukau bergaya retro menggunakan palet komponen *UI Layout Modern*.
+- 🖥️ **Bento Grid Layout**: Desain asimetris namun minimalis & bersih.
+- 🌠 **Shimmer & Glow Cards**: Efek pendaran mouse mengikuti kursor tiap kali kamu melihat profil lagu.
+- 👾 **Live Pixel Tracker**: Lacak kerja Agen AI dengan indikator animasi sprite (Si kecil Pixel Agent berjalan melintasi *pipeline*!)
+
+---
+
+## 🛠️ Panduan Instalasi Global (Open Source Setup)
+
+Karena fungsionalitas utama (*Generate Playlist*) membutuhkan akses resmi Spotify ke akunmu sendiri, ikuti 3 langkah mudah ini:
+
+### 1. Buat Aplikasi di Akun Spotify Developer
+Kamu butuh *Kunci Akses* agar AI punya wewenang membuatkan playlist untukmu.
+- Kunjungi [Spotify Developer Dashboard](https://developer.spotify.com/dashboard).
+- Masuk / Register, lalu buat aplikasi baru (*Create App*). Isi bebas namanya.
+- Di dalam App tersebut, buka **"Settings"**.
+- Temukan kolom **Redirect URIs**, dan masukkan persis teks ini: 
+  👉 http://127.0.0.1:8000/auth/callback 
+- Lalu tekan **Add**, *scroll* ke bawah dan klik **Save**.
+- Jangan tutup halaman ini, catat nilai **Client ID** dan **Client Secret** kamu.
+
+### 2. Unduh Code & Siapkan Environment
+Buka terminal OS / shell kesukaanmu, eksekusi perintah kloning dan instalasi berikut:
+
+``powershell
+# 1. Kloning repo
+git clone https://github.com/wahyu-shiregaru/SmartDiscover.git
+cd SmartDiscover
+
+# 2. Buat lingkungan virtual terisolasi
 python -m venv .venv
-.\.venv\Scripts\Activate.ps1
+.\.venv\Scripts\Activate.ps1   # (Bagi pengguna Windows)
+# source .venv/bin/activate    # (Bagi pengguna Mac/Linux)
+
+# 3. Instal semua requirements (FastAPI, httpx, dll)
 pip install -r requirements.txt
+
+# 4. Copy template lingkungan kerja (Environment)
+cp .env.example .env
+``
+
+### 3. Setup Kunci Rahasiamu (.env)
+Buka *Code Editor*-mu (seperti VS Code), lalu buka *file* .env yang baru saja tercetak dari *copy* instalasi poin no 4 tadi.
+Di sana tempat kosong sudah aku siapkan. Isi semua tokennya (Spotify yang barusan didapat + OpenRouter AI):
+
+`ini
+OPENROUTER_API_KEY="sk-or-v1-apikey-kamu..."
+SPOTIFY_CLIENT_ID="d8be....dari-dashboard-kamu"
+SPOTIFY_CLIENT_SECRET="a449....client-secret-kamu"
 `
 
-**2. Siapkan Environment Variables**
-Salin \.env.example\ menjadi \.env\.
-`powershell
-Copy-Item .env.example .env
-`
-
-**3. Nyalakan Engine 🚀**
+### 4. Nyalakan Turbin! 🚀
+Setelah disave, nyalakan *server websocket* nya dengan mengeksekusi ini di terminal:
 `powershell
 uvicorn app.main:app --reload
 `
 
-> **🌐 Tautan Lokal:**
-> - Web Interaktif (Dashboard): [http://127.0.0.1:8000/](http://127.0.0.1:8000/)
-> - Struktur API / Dokumentasi Swagger: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+> **🌐 Dashboard Lokal** sudah *live* sekarang. Akses lewat browser dengan klik: 
+> 👉 [http://127.0.0.1:8000/](http://127.0.0.1:8000/)
 
 ---
 
-## 📝 Demo Request API
+## 🛡️ Jaminan Fallback (Anti-Patah)
+Jangan khawatir tentang error jika kamu tak sengaja salah masukkin kredensial tadi, SmartDiscover difiturkan anti-patah algoritma.
+- **Kamu belum masukkan Spotify Keys di .env?** Dashboard UI kamu tidak akan hancur dan *crash*, SmartDiscover akan otomatis "beralih" mode menjadi versi *Mock Candidates Mode* sekadar agar antarmuka Pixel Tracker tetap bisa kamu demonstrasikan! (Sangat direkomendasikan bagi Front-End Enginners).
 
-**Contoh Payload POST \/recommend\:**
-`http
-POST /recommend
-Content-Type: application/json
 
-{
-  "text": "aku mau lagu buat belajar malam yang tenang dan fokus",
-  "target_count": 15
-}
-`
-
-**Cuplikan Struktur JSON (Response):**
-`json
-{
-  "summary": { "input_language": "id", "returned_count": 15 },
-  "intent_profile": { "mood": "calm", "activity": "studying", "energy": "low" },
-  "recommendations": [
-    {
-      "rank": 1,
-      "title": "Midnight Focus",
-      "artist": "Loftline",
-      "why": "Cocok untuk studying dengan nuansa calm dan energi low.",
-      "score": 0.412
-    }
-  ]
-}
-`
-
----
-
-## 🔑 Konfigurasi Rahasia (\.env\)
-
-| Ekosistem API | Variabel Kunci | Peran / Nilai Awal |
-|---|---|---|
-| **Spotify Search** | \SPOTIFY_CLIENT_ID\ <br> \SPOTIFY_CLIENT_SECRET\ | Akses *realtime data* Spotify. Jika kosong akan dialihkan ke mode *Mock Candidates*. |
-| **OpenRouter Engine** | \OPENROUTER_API_KEY\<br>\OPENROUTER_MODEL\<br>\OPENROUTER_BASE_URL\ | Mengaktivasikan otak LLM untuk Pipeline Agent. (Default: \google/gemini-2.5-flash-lite\). |
-
+<div align="center">
+  <br>
+  <i>Dirancang teliti dengan dedikasi AI Algoritma.</i>
+</div>

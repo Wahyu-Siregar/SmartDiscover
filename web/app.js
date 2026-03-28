@@ -3,6 +3,7 @@ const intentInput = document.getElementById("intentInput");
 const targetCountInput = document.getElementById("targetCountInput");
 const submitBtn = document.getElementById("submitBtn");
 const healthBtn = document.getElementById("healthBtn");
+const spotifyLoginBtn = document.getElementById("spotifyLoginBtn");
 const llmBadge = document.getElementById("llmBadge");
 const spotifyBadge = document.getElementById("spotifyBadge");
 const quickPrompts = document.getElementById("quickPrompts");
@@ -99,9 +100,13 @@ function delay(ms) {
 }
 
 function setRuntimeVisualState(state) {
-  const pipeline = document.querySelector('.agent-pipeline');
+  const pipeline = document.querySelector('.pipeline-panel');
   if (pipeline) {
-    pipeline.className = `agent-pipeline state-${state}`;
+    if (state === "error") {
+      pipeline.style.borderColor = "var(--brand-glow)";
+    } else {
+      pipeline.style.borderColor = "var(--border-color)";
+    }
   }
   if (runtimeVisualState !== state) {
     runtimeVisualState = state;
@@ -217,7 +222,7 @@ function renderRecommendations(data) {
 
   list.forEach((item, index) => {
     const card = document.createElement("article");
-    card.className = "track-card enter";
+    card.className = "track-card magic-card enter";
     card.style.setProperty("--stagger-index", String(index));
 
     const top = document.createElement("div");
@@ -287,6 +292,77 @@ function renderRecommendations(data) {
 
     recommendationList.appendChild(card);
   });
+
+  if (list.length > 0) {
+    const exportContainer = document.createElement("div");
+    exportContainer.style.setProperty("grid-column", "1 / -1");
+    exportContainer.style.marginTop = "24px";
+    exportContainer.style.display = "flex";
+    exportContainer.style.justifyContent = "center";
+
+    const exportBtn = document.createElement("button");
+    exportBtn.className = "shimmer-btn";
+    exportBtn.style.width = "100%";
+    exportBtn.style.maxWidth = "400px";
+    exportBtn.style.marginTop = "16px";
+
+    exportBtn.onmouseover = () => { exportBtn.style.transform = "scale(1.05)"; };
+    exportBtn.onmouseout = () => { exportBtn.style.transform = "scale(1)"; };
+
+    const hasToken = !!localStorage.getItem("spotify_token");
+    exportBtn.textContent = hasToken ? "Save as Spotify Playlist" : "Login to Save to Spotify";
+
+    exportBtn.addEventListener("click", async () => {
+      if (!hasToken) {
+        window.location.href = "/auth/login";
+        return;
+      }
+      
+      exportBtn.disabled = true;
+      exportBtn.textContent = "Creating Playlist...";
+      exportBtn.style.opacity = "0.7";
+      
+      try {
+        const trackIds = list
+          .filter((i) => i.spotify_url && i.spotify_url.includes("/track/"))
+          .map((i) => i.spotify_url.split("/track/")[1].split("?")[0]);
+          
+        const payload = {
+          user_token: localStorage.getItem("spotify_token"),
+          title: `SmartDiscover: ${data.intent_profile?.mood || "Playlist"}`,
+          description: `Rekomendasi playlist otomatis untuk aktivitas: ${data.intent_profile?.activity || "Personal"}`,
+          track_ids: trackIds,
+        };
+        
+        const res = await fetch("/create-playlist", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        
+        const resData = await res.json();
+        
+        if (resData.url) {
+          exportBtn.textContent = "Playlist Created! (Click to Open)";
+          exportBtn.style.opacity = "1";
+          exportBtn.onclick = () => window.open(resData.url, "_blank");
+          exportBtn.disabled = false;
+          setStatus("Berhasil! Playlist telah disimpan ke akun Spotify kamu.", false);
+        } else {
+          throw new Error(resData.error || "Gagal membuat playlist");
+        }
+      } catch (err) {
+        exportBtn.textContent = "Error. Try Again";
+        exportBtn.disabled = false;
+        exportBtn.style.opacity = "1";
+        exportBtn.style.backgroundColor = "#ff8f8f"; // error red
+        setStatus(`Gagal export playlist: ${err.message}`, true);
+      }
+    });
+
+    exportContainer.appendChild(exportBtn);
+    recommendationList.appendChild(exportContainer);
+  }
 }
 
 function renderLoadingSkeleton(targetCount) {
@@ -442,11 +518,36 @@ function bindQuickPrompts() {
   });
 }
 
+function handleOAuthToken() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const token = urlParams.get("token");
+  if (token) {
+    localStorage.setItem("spotify_token", token);
+    window.history.replaceState({}, document.title, window.location.pathname);
+    setStatus("Berhasil login! Akun Spotify siap digunakan untuk menyimpan playlist.");
+  }
+  
+  if (localStorage.getItem("spotify_token") && spotifyLoginBtn) {
+    spotifyLoginBtn.textContent = "Spotify Connected ✓";
+    spotifyLoginBtn.style.backgroundColor = "transparent";
+    spotifyLoginBtn.style.border = "1px solid #1DB954";
+    spotifyLoginBtn.style.color = "#1DB954";
+    spotifyLoginBtn.disabled = true;
+  }
+}
+
+if (spotifyLoginBtn) {
+  spotifyLoginBtn.addEventListener("click", () => {
+    window.location.href = "/auth/login";
+  });
+}
+
 form.addEventListener("submit", requestRecommendations);
 healthBtn.addEventListener("click", checkSpotifyHealth);
 bindQuickPrompts();
 startRuntimeFrameLoop();
 checkLlmHealth();
 checkSpotifyHealth();
+handleOAuthToken();
 setAgentStage(0, "Idle • Menunggu perintah");
 setAgentMetrics("Milestone backend akan tampil setelah request selesai.");

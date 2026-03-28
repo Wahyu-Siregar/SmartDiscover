@@ -5,7 +5,7 @@
 env/
 venv/
 
-.github
+# .github
 
 # Python
 __pycache__/

@@ -3,132 +3,142 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SmartDiscover Dashboard</title>
+    <title>SmartDiscover • Magic UI</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;700;800&family=Space+Mono:wght@400;700&display=swap"
-      rel="stylesheet"
-    />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/static/styles.css" />
   </head>
-  <body>
-    <div class="magic-grid" aria-hidden="true"></div>
-    <div class="bg-orb orb-a"></div>
-    <div class="bg-orb orb-b"></div>
+  <body class="dark-theme">
+    <!-- Magic UI Backgrounds -->
+    <div class="retro-grid-container" aria-hidden="true">
+      <div class="retro-grid"></div>
+      <div class="retro-gradient"></div>
+    </div>
 
-    <main class="layout">
-      <header class="hero fade-up">
-        <p class="eyebrow">SMARTDISCOVER</p>
-        <h1><span class="gradient-title">Temukan Lagu Sesuai Mood Kamu</span></h1>
-        <p class="subtitle">
-          Cukup tulis suasana hati atau aktivitasmu, SmartDiscover akan memilihkan lagu yang pas.
-        </p>
-      </header>
+    <!-- Main Layout: Bento Grid -->
+    <div class="bento-layout">
+      <!-- LEFT COLUMN -->
+      <aside class="bento-sidebar glass-panel">
+        <header class="hero">
+          <div class="hero-badge fade-in">✨ Powered by Magic UI</div>
+          <h1 class="gradient-title">SmartDiscover</h1>
+          <p class="subtitle">AI-Driven Spotify Curation in a single prompt.</p>
+        </header>
 
-      <section class="panel fade-up delay-1">
-        <div class="panel-head">
-          <h2>Mulai Rekomendasi</h2>
-          <div class="panel-actions">
-            <p id="llmBadge" class="health-badge neutral">LLM: checking...</p>
-            <p id="spotifyBadge" class="health-badge neutral">Spotify: checking...</p>
-            <button id="healthBtn" class="ghost-btn" type="button">Check Spotify Health</button>
+        <form id="recommendForm" class="control-form delay-1 fade-in">
+          <div class="input-group">
+            <label for="intentInput">Apa mood atau aktivitasmu?</label>
+            <textarea id="intentInput" rows="3" placeholder="contoh: lagu sedih pas nge-bug jam 2 pagi..." required></textarea>
           </div>
-        </div>
-
-        <div class="quick-prompts" id="quickPrompts">
-          <button class="chip-btn" type="button" data-intent="lagu fokus buat kerja malam yang tenang">
-            Fokus Kerja
-          </button>
-          <button class="chip-btn" type="button" data-intent="lagu santai buat healing sore hari">
-            Healing Sore
-          </button>
-          <button class="chip-btn" type="button" data-intent="lagu energik untuk olahraga pagi">
-            Olahraga Pagi
-          </button>
-          <button class="chip-btn" type="button" data-intent="lagu mellow untuk hujan malam">
-            Hujan Malam
-          </button>
-        </div>
-
-        <form id="recommendForm" class="form-grid">
-          <label>
-            Ceritakan Mood / Aktivitas
-            <textarea
-              id="intentInput"
-              rows="4"
-              placeholder="Contoh: aku mau lagu buat belajar malam yang tenang dan fokus"
-              required
-            ></textarea>
-          </label>
-
-          <div class="inline-fields">
-            <label>
-              Jumlah Lagu
-              <input id="targetCountInput" type="number" min="1" max="50" value="15" />
-            </label>
-
-            <button id="submitBtn" class="primary-btn" type="submit">Cari Rekomendasi</button>
+          
+          <div class="input-group row-group">
+             <div>
+                <label for="targetCountInput">Berapa Lagu?</label>
+                <input id="targetCountInput" type="number" min="5" max="50" value="15" />
+             </div>
+             
+             <div class="badges-stacked">
+                <span id="llmBadge" class="health-badge neutral">LLM: checking...</span>
+                <span id="spotifyBadge" class="health-badge neutral">Spotify: checking...</span>
+             </div>
           </div>
+
+          <p id="statusText" class="status-msg">Siap menerima perintah.</p>
+
+          <!-- Magic Shimmer Button -->
+          <button id="submitBtn" class="shimmer-btn" type="submit">
+            <span class="shimmer-text">Mulai Kurasi</span>
+          </button>
         </form>
 
-        <p id="statusText" class="status">Ready.</p>
-      </section>
-
-      <section class="panel agent-visual fade-up delay-2">
-        <div class="panel-head compact">
-          <h2>Agent Activity</h2>
-          <p id="agentStageText" class="agent-stage-text">Idle • Menunggu perintah</p>
+        <div class="quick-prompts fade-in delay-2" id="quickPrompts">
+          <p class="label">Coba Prompt Bebas:</p>
+          <div class="chips">
+            <button class="chip-btn" type="button" data-intent="lagu fokus buat kerja malam hari">Fokus Kerja</button>
+            <button class="chip-btn" type="button" data-intent="jalanan hujan malam sendirian">Hujan Malam</button>
+            <button class="chip-btn" type="button" data-intent="workout keras angkat beban">Workout</button>
+          </div>
         </div>
 
-        <div id="agentFlow" class="agent-flow" data-stage="0">
-            <div class="agent-pipeline state-idle">
-              <img id="agentPixel" src="/static/assets/runtime/idle-1.svg" class="pixel-agent" alt="Agent Pixel Animation" />
-              <div class="pipeline-track">
-                <div id="pipelineProgress" class="pipeline-progress"></div>
-              </div>
-            </div>
-            <div class="stage-pills" aria-label="Tahap agent">
-              <p id="pillProfiler" class="stage-pill">Profiler</p>
-              <p id="pillSearch" class="stage-pill">Search</p>
-              <p id="pillRanker" class="stage-pill">Ranker</p>
-              <p id="pillPresenter" class="stage-pill">Presenter</p>
+        <div class="system-actions fade-in delay-3">
+          <button id="spotifyLoginBtn" class="magic-btn-outline" type="button">Connect Spotify</button>
+          <button id="healthBtn" class="magic-btn-outline" type="button">Check Health</button>
         </div>
+      </aside>
 
-        <p id="agentMetrics" class="agent-metrics">Milestone backend akan tampil setelah request selesai.</p>
-      </section>
-
-      <section class="grid-results fade-up delay-3">
-        <article class="panel">
-          <h2>Ringkasan Hasil</h2>
-          <div class="summary-grid">
-            <div class="summary-card">
-              <p class="summary-label">Mood</p>
-              <p id="summaryMood" class="summary-value">-</p>
-            </div>
-            <div class="summary-card">
-              <p class="summary-label">Aktivitas</p>
-              <p id="summaryActivity" class="summary-value">-</p>
-            </div>
-            <div class="summary-card">
-              <p class="summary-label">Jumlah Lagu</p>
-              <p id="summaryCount" class="summary-value">0</p>
-            </div>
-            <div class="summary-card">
-              <p class="summary-label">Mode AI</p>
-              <p id="summaryMode" class="summary-value">-</p>
-            </div>
+      <!-- RIGHT COLUMN -->
+      <main class="bento-content">
+        <!-- Agent Pipeline Tracker -->
+        <article class="glass-panel pipeline-panel fade-in delay-2" id="agentFlow" data-stage="0">
+          <div class="pipeline-header">
+            <h3>Agent Neural Pipeline</h3>
+            <span id="agentStageText" class="stage-text">Idle • Menunggu perintah</span>
+          </div>
+          
+          <div class="track-container">
+             <div class="track-line"></div>
+             <div class="track-active"></div>
+             <!-- The Pixel Agent Sprite -->
+             <img id="agentPixel" src="/static/assets/runtime/idle-1.svg" alt="Mini agent" class="pixel-agent" />
+             
+             <!-- Steps -->
+             <div class="track-steps">
+               <div class="track-step" id="pillProfiler"><div class="dot"></div></div>
+               <div class="track-step" id="pillSearch"><div class="dot"></div></div>
+               <div class="track-step" id="pillRanker"><div class="dot"></div></div>
+               <div class="track-step" id="pillPresenter"><div class="dot"></div></div>
+             </div>
+          </div>
+          
+          <div class="pipeline-footer">
+            <p id="agentMetrics">Milestone backend akan tampil di sini.</p>
           </div>
         </article>
 
-        <article class="panel">
-          <h2>Rekomendasi Terbaik Untukmu</h2>
-          <p id="resultLead" class="result-lead">Tulis mood kamu lalu klik Cari Rekomendasi.</p>
+        <!-- Generation Settings / Info -->
+        <article class="bento-stats fade-in delay-3">
+          <div class="stat-box">
+            <span class="stat-label">Mood Terdeteksi</span>
+            <span id="summaryMood" class="stat-val">-</span>
+          </div>
+          <div class="stat-box">
+             <span class="stat-label">Aktivitas</span>
+             <span id="summaryActivity" class="stat-val">-</span>
+          </div>
+          <div class="stat-box">
+             <span class="stat-label">Jumlah Track</span>
+             <span id="summaryCount" class="stat-val">-</span>
+          </div>
+          <div class="stat-box">
+             <span class="stat-label">Engine Mode</span>
+             <span id="summaryMode" class="stat-val">-</span>
+          </div>
+        </article>
+
+        <!-- Dynamic Output -->
+        <article class="results-panel fade-in delay-4">
+          <div class="results-header">
+             <h2>Rekomendasi Terbaik</h2>
+             <p id="resultLead" class="result-lead">Masukan prompt di panel kiri untuk memulai iterasi.</p>
+          </div>
           <div id="recommendationList" class="recommendation-grid"></div>
         </article>
-      </section>
-    </main>
+      </main>
+    </div>
 
     <script src="/static/app.js"></script>
+    <script>
+      // Magic Card Mouse Glow Effect Injector
+      document.addEventListener("mousemove", (e) => {
+        for(const card of document.querySelectorAll('.magic-card')) {
+          const rect = card.getBoundingClientRect();
+          const x = e.clientX - rect.left;
+          const y = e.clientY - rect.top;
+          card.style.setProperty('--mouse-x', `${x}px`);
+          card.style.setProperty('--mouse-y', `${y}px`);
+        }
+      });
+    </script>
   </body>
 </html>

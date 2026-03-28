@@ -3,6 +3,7 @@ from typing import Any
 
 import httpx
 
+import urllib.parse
 from app.config import settings
 from app.models import IntentProfile, TrackCandidate
 
@@ -10,6 +11,8 @@ from app.models import IntentProfile, TrackCandidate
 class SpotifyClient:
     TOKEN_URL = "https://accounts.spotify.com/api/token"
     SEARCH_URL = "https://api.spotify.com/v1/search"
+    AUTHORIZE_URL = "https://accounts.spotify.com/authorize"
+    PROFILE_URL = "https://api.spotify.com/v1/me"
 
     def __init__(self) -> None:
         self._token: str = ""
@@ -52,10 +55,9 @@ class SpotifyClient:
             }
 
     async def search_tracks(self, profile: IntentProfile, target_count: int) -> tuple[list[TrackCandidate], dict[str, Any]]:
-        variants = self._build_query_variants(profile)
         if not settings.spotify_client_id or not settings.spotify_client_secret:
             return self._mock_tracks(profile, target_count), {
-                "variants": variants,
+                "variants": [],
                 "broadening_applied": False,
                 "notes": "Spotify credentials belum diisi, menggunakan mock candidates untuk bootstrap development.",
             }
@@ -63,58 +65,76 @@ class SpotifyClient:
         token = await self._get_access_token()
         headers = {"Authorization": f"Bearer {token}"}
 
-        candidates: list[TrackCandidate] = []
-        for q in variants:
-            params = {
-                "q": q,
-                "type": "track",
-                "limit": min(10, max(5, target_count // 2)),
-                "market": "ID",
-            }
-            async with httpx.AsyncClient(timeout=20.0) as client:
-                resp = await client.get(self.SEARCH_URL, params=params, headers=headers)
-            if resp.status_code != 200:
-                continue
-            payload = resp.json()
-            items = payload.get("tracks", {}).get("items", [])
-            for item in items:
-                candidates.append(
-                    TrackCandidate(
-                        title=item.get("name", ""),
-                        artist=", ".join(a.get("name", "") for a in item.get("artists", [])),
-                        spotify_url=item.get("external_urls", {}).get("spotify", ""),
-                        preview_url=item.get("preview_url") or "",
-                        popularity=item.get("popularity", 0),
+        candidates: dict[str, TrackCandidate] = {}
+        
+        # STRATEGI BARU: Cari playlist organik berdasarkan mood/aktivitas
+        # Ini menghindari rekomendasi harfiah seperti judul lagu "melancholy"
+        playlist_q = f"{profile.mood} {profile.activity}".strip()
+        if not playlist_q and profile.genre:
+            playlist_q = profile.genre[0]
+            
+        async with httpx.AsyncClient(timeout=20.0) as client:
+            p_resp = await client.get(
+                self.SEARCH_URL,
+                params={"q": playlist_q, "type": "playlist", "limit": 3, "market": "ID"},
+                headers=headers,
+            )
+            
+            if p_resp.status_code == 200:
+                playlists = p_resp.json().get("playlists", {}).get("items", [])
+                for pl in playlists:
+                    if not pl: continue
+                    pl_id = pl.get("id")
+                    
+                    t_resp = await client.get(
+                        f"https://api.spotify.com/v1/playlists/{pl_id}/tracks",
+                        params={"limit": 15, "market": "ID"},
+                        headers=headers,
                     )
-                )
+                    if t_resp.status_code == 200:
+                        items = t_resp.json().get("items", [])
+                        for item in items:
+                            track = item.get("track")
+                            if track and track.get("id"):
+                                candidates[track["id"]] = TrackCandidate(
+                                    title=track.get("name", ""),
+                                    artist=", ".join(a.get("name", "") for a in track.get("artists", [])),
+                                    spotify_url=track.get("external_urls", {}).get("spotify", ""),
+                                    preview_url=track.get("preview_url") or "",
+                                    popularity=track.get("popularity", 0),
+                                )
 
         broadening_applied = False
+        variants = self._build_query_variants(profile)
+        
+        # FALLBACK / SUPPLEMENT: Jika track dari playlist terlalu sedikit
         if len(candidates) < target_count:
             broadening_applied = True
-            broad_q = f"{profile.mood} music"
-            async with httpx.AsyncClient(timeout=20.0) as client:
-                resp = await client.get(
-                    self.SEARCH_URL,
-                    params={"q": broad_q, "type": "track", "limit": target_count, "market": "ID"},
-                    headers=headers,
-                )
-            if resp.status_code == 200:
-                items = resp.json().get("tracks", {}).get("items", [])
-                for item in items:
-                    candidates.append(
-                        TrackCandidate(
-                            title=item.get("name", ""),
-                            artist=", ".join(a.get("name", "") for a in item.get("artists", [])),
-                            spotify_url=item.get("external_urls", {}).get("spotify", ""),
-                            preview_url=item.get("preview_url") or "",
-                            popularity=item.get("popularity", 0),
-                        )
-                    )
+            for q in variants:
+                params = {
+                    "q": q,
+                    "type": "track",
+                    "limit": min(10, max(5, target_count // 3)),
+                    "market": "ID",
+                }
+                async with httpx.AsyncClient(timeout=20.0) as client:
+                    resp = await client.get(self.SEARCH_URL, params=params, headers=headers)
+                if resp.status_code == 200:
+                    items = resp.json().get("tracks", {}).get("items", [])
+                    for item in items:
+                        if item.get("id") and item["id"] not in candidates:
+                            candidates[item["id"]] = TrackCandidate(
+                                title=item.get("name", ""),
+                                artist=", ".join(a.get("name", "") for a in item.get("artists", [])),
+                                spotify_url=item.get("external_urls", {}).get("spotify", ""),
+                                preview_url=item.get("preview_url") or "",
+                                popularity=item.get("popularity", 0),
+                            )
 
-        return candidates, {
-            "variants": variants,
+        return list(candidates.values()), {
+            "variants": [playlist_q] + variants,
             "broadening_applied": broadening_applied,
-            "notes": "Search menggunakan endpoint /search dengan fallback broad query.",
+            "notes": "Pencarian diutamakan via Playlist organik untuk koleksi genre/mood yang kaya, lalu fallback fallback ke pencarian track biasa.",
         }
 
     async def _get_access_token(self) -> str:
@@ -181,3 +201,50 @@ class SpotifyClient:
                 )
             )
         return items
+
+    def get_authorization_url(self, redirect_uri: str) -> str:
+        params = {
+            "client_id": settings.spotify_client_id,
+            "response_type": "code",
+            "redirect_uri": redirect_uri,
+            "scope": "playlist-modify-public playlist-modify-private",
+        }
+        query = urllib.parse.urlencode(params)
+        return f"{self.AUTHORIZE_URL}?{query}"
+
+    async def get_user_token(self, code: str, redirect_uri: str) -> dict[str, Any]:
+        data = {
+            "grant_type": "authorization_code",
+            "code": code,
+            "redirect_uri": redirect_uri,
+        }
+        auth = (settings.spotify_client_id, settings.spotify_client_secret)
+        async with httpx.AsyncClient(timeout=20.0) as client:
+            resp = await client.post(self.TOKEN_URL, data=data, auth=auth)
+        resp.raise_for_status()
+        return resp.json()
+
+    async def create_playlist(
+        self, user_token: str, title: str, description: str, track_ids: list[str]
+    ) -> dict[str, Any]:
+        headers = {"Authorization": f"Bearer {user_token}"}
+        
+        async with httpx.AsyncClient(timeout=20.0) as client:
+            profile_resp = await client.get(self.PROFILE_URL, headers=headers)
+            profile_resp.raise_for_status()
+            user_id = profile_resp.json()["id"]
+
+            create_payload = {"name": title, "description": description, "public": False}
+            create_url = f"https://api.spotify.com/v1/users/{user_id}/playlists"
+            create_resp = await client.post(create_url, json=create_payload, headers=headers)
+            create_resp.raise_for_status()
+            
+            playlist_data = create_resp.json()
+            playlist_id = playlist_data["id"]
+
+            if track_ids:
+                uris = [f"spotify:track:{tid}" for tid in track_ids]
+                add_url = f"https://api.spotify.com/v1/playlists/{playlist_id}/tracks"
+                await client.post(add_url, json={"uris": uris}, headers=headers)
+
+            return {"id": playlist_id, "url": playlist_data["external_urls"]["spotify"]}
