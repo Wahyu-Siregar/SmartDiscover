@@ -13,68 +13,68 @@
 
 ---
 
-> "Aku mau lagu belajar malam yang tenang dan fokus."
+> "I need calm and focused music for late-night study sessions."
 >
-> SmartDiscover mengubah prompt natural language menjadi rekomendasi lagu yang relevan, terurut, dan siap dijadikan playlist.
+> SmartDiscover transforms natural language prompts into relevant, ranked music recommendations that are ready to become a playlist.
 
-## Kenapa SmartDiscover
+## Why SmartDiscover
 
-SmartDiscover adalah sistem rekomendasi musik berbasis 4 agent AI. Alih-alih hanya melakukan pencarian literal, pipeline ini memecah tugas menjadi analisis intent, pencarian kandidat, ranking, dan presentasi hasil agar rekomendasi terasa lebih natural.
+SmartDiscover is a 4-agent AI music recommendation system. Instead of relying on literal keyword matching alone, the pipeline splits the process into intent analysis, candidate retrieval, ranking, and result presentation so recommendations feel more natural and contextual.
 
-| Nilai Utama | Dampak |
+| Core Value | Impact |
 |---|---|
-| Multi-agent pipeline | Hasil lebih terarah dibanding single-step prompt |
-| Integrasi Spotify | Kandidat lagu real-time dari katalog Spotify |
-| Ranking berbasis konteks | Output lebih sesuai mood dan aktivitas user |
-| Siap dihubungkan ke playlist | Rekomendasi bisa langsung dieksekusi |
+| Multi-agent pipeline | More targeted results than a single-step prompt |
+| Spotify integration | Real-time candidate tracks from Spotify's catalog |
+| Context-based ranking | Better alignment with user mood and activity |
+| Playlist-ready output | Recommendations can be executed immediately |
 
-## Arsitektur 4 Agent
+## 4-Agent Architecture
 
 ```mermaid
 flowchart TD
-    A[User Prompt] --> B[1. Profiler Agent\nEkstraksi mood, aktivitas, preferensi]
-    B --> C[2. Spotify Search Agent\nQuery kandidat lagu dari Spotify]
-    C --> D[3. Filter and Ranker Agent\nScoring relevansi, dedup, urutkan hasil]
-    D --> E[4. Presenter Agent\nFormat output agar mudah dieksekusi user]
+  A[User Prompt] --> B[1. Profiler Agent\nExtract mood, activity, preferences]
+  B --> C[2. Spotify Search Agent\nRetrieve candidate tracks from Spotify]
+  C --> D[3. Filter and Ranker Agent\nScore relevance, deduplicate, rank results]
+  D --> E[4. Presenter Agent\nFormat output for easy execution]
 ```
 
 ### 1. Profiler Agent
 
-- Mengubah input natural language menjadi parameter terstruktur.
-- Contoh parameter: mood, aktivitas, energi, preferensi style.
+- Converts natural language input into structured parameters.
+- Example parameters: mood, activity, energy level, style preference.
 
 ### 2. Spotify Search Agent
 
-- Menggunakan query adaptif untuk mengambil kandidat lagu.
-- Fokus pada keberagaman kandidat agar hasil tidak repetitif.
+- Uses adaptive queries to retrieve candidate tracks.
+- Focuses on candidate diversity to avoid repetitive results.
 
 ### 3. Filter and Ranker Agent
 
-- Menilai relevansi kandidat berdasarkan konteks prompt.
-- Menyusun daftar prioritas lagu terbaik.
+- Evaluates candidate relevance based on prompt context.
+- Produces a prioritized list of the best tracks.
 
 ### 4. Presenter Agent
 
-- Menyajikan hasil akhir dalam format yang ringkas dan actionable.
-- Siap dilanjutkan ke flow pembuatan playlist.
+- Delivers final results in a concise, actionable format.
+- Ready to continue into playlist creation flow.
 
 ---
 
-## Setup Cepat
+## Quick Setup
 
-### 1) Buat App di Spotify Developer
+### 1) Create an App in Spotify Developer
 
-1. Buka https://developer.spotify.com/dashboard.
-2. Buat aplikasi baru.
-3. Tambahkan Redirect URI berikut:
+1. Open https://developer.spotify.com/dashboard.
+2. Create a new application.
+3. Add the following Redirect URI:
 
 ```text
 http://127.0.0.1:8000/auth/callback
 ```
 
-4. Simpan `Client ID` dan `Client Secret`.
+4. Save your `Client ID` and `Client Secret`.
 
-### 2) Clone dan Install Dependency
+### 2) Clone the Repository and Install Dependencies
 
 ```powershell
 git clone https://github.com/wahyu-shiregaru/SmartDiscover.git
@@ -87,40 +87,40 @@ pip install -r requirements.txt
 Copy-Item .env.example .env
 ```
 
-Untuk macOS/Linux:
+For macOS/Linux:
 
 ```bash
 source .venv/bin/activate
 cp .env.example .env
 ```
 
-### 3) Isi File Environment
+### 3) Fill the Environment File
 
 ```ini
-OPENROUTER_API_KEY="sk-or-v1-apikey-kamu..."
-SPOTIFY_CLIENT_ID="d8be....dari-dashboard-kamu"
-SPOTIFY_CLIENT_SECRET="a449....client-secret-kamu"
+OPENROUTER_API_KEY="your-openrouter-api-key"
+SPOTIFY_CLIENT_ID="your-spotify-client-id"
+SPOTIFY_CLIENT_SECRET="your-spotify-client-secret"
 ```
 
-### 4) Jalankan Aplikasi
+### 4) Run the Application
 
 ```powershell
 uvicorn app.main:app --reload
 ```
 
-Buka aplikasi di http://127.0.0.1:8000/
+Open the app at http://127.0.0.1:8000/
 
 ---
 
-## Contoh Prompt User
+## Example User Prompts
 
-- "Lagu coding malam yang fokus tapi tidak bikin ngantuk"
-- "Vibe roadtrip sore yang cerah dan upbeat"
-- "Musik santai buat baca buku, instrumental lebih bagus"
+- "Late-night coding tracks that keep me focused but not sleepy"
+- "A bright and upbeat vibe for an afternoon road trip"
+- "Relaxing background music for reading, preferably instrumental"
 
 ## Fallback Mode
 
-Jika kredensial Spotify belum valid atau belum diisi, aplikasi tetap berjalan dalam mode fallback agar antarmuka tetap bisa didemokan.
+If Spotify credentials are missing or invalid, the application still runs in fallback mode so the interface can be demonstrated.
 
 ## Tech Stack
 
@@ -130,16 +130,16 @@ Jika kredensial Spotify belum valid atau belum diisi, aplikasi tetap berjalan da
 - Music source: Spotify Web API
 - Frontend: HTML, CSS, JavaScript
 
-## Lisensi
+## License
 
-Project ini menggunakan MIT License. Lihat file LICENSE.
+This project is distributed under the MIT License. See LICENSE for details.
 
 ## Legal Disclaimer
 
-- Aplikasi ini menggunakan API pihak ketiga (Spotify dan provider LLM eksternal).
-- Proyek ini independen dan tidak berafiliasi, disponsori, atau didukung resmi oleh Spotify.
-- Seluruh merek dagang, logo, dan aset Spotify adalah milik Spotify AB.
-- Penggunaan API key wajib mengikuti Terms of Service masing-masing penyedia.
+- This application uses third-party APIs (Spotify and external LLM providers).
+- This project is independent and is not affiliated with, endorsed by, or sponsored by Spotify.
+- All Spotify trademarks, logos, and brand assets belong to Spotify AB.
+- API key usage must comply with each provider's Terms of Service.
 
 ---
 
