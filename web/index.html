@@ -6,7 +6,7 @@
     <title>SmartDiscover • Magic UI</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/static/styles.css" />
   </head>
   <body class="dark-theme">
@@ -29,7 +29,7 @@
         <form id="recommendForm" class="control-form delay-1 fade-in">
           <div class="input-group">
             <label for="intentInput">Apa mood atau aktivitasmu?</label>
-            <textarea id="intentInput" rows="3" placeholder="contoh: lagu sedih pas nge-bug jam 2 pagi..." required></textarea>
+            <textarea id="intentInput" rows="2" placeholder="contoh: lagu sedih pas nge-bug jam 2 pagi..." required></textarea>
           </div>
           
           <div class="input-group row-group">
@@ -69,8 +69,33 @@
 
       <!-- RIGHT COLUMN -->
       <main class="bento-content">
+        <article class="insight-strip glass-panel fade-in delay-1" aria-label="Insight ringkas">
+          <div class="insight-tile">
+            <p class="insight-label">Engine</p>
+            <p class="insight-value">Multi-Agent Music Graph</p>
+          </div>
+          <div class="insight-tile">
+            <p class="insight-label">Latency</p>
+            <p class="insight-value">Adaptive Fast Path</p>
+          </div>
+          <div class="insight-tile">
+            <p class="insight-label">Output</p>
+            <p class="insight-value">Ready-to-Play Picks</p>
+          </div>
+        </article>
+
         <!-- Agent Pipeline Tracker -->
         <article class="glass-panel pipeline-panel fade-in delay-2" id="agentFlow" data-stage="0">
+          <div class="pipeline-fx" aria-hidden="true">
+            <span class="pipeline-orbital"></span>
+            <span class="pipeline-border-beam"></span>
+            <span class="pipeline-border-beam is-reverse"></span>
+            <span class="pipeline-corner pipeline-corner-tl"></span>
+            <span class="pipeline-corner pipeline-corner-tr"></span>
+            <span class="pipeline-corner pipeline-corner-bl"></span>
+            <span class="pipeline-corner pipeline-corner-br"></span>
+          </div>
+
           <div class="pipeline-header">
             <h3>Agent Neural Pipeline</h3>
             <span id="agentStageText" class="stage-text">Idle • Menunggu perintah</span>
@@ -84,10 +109,10 @@
              
              <!-- Steps -->
              <div class="track-steps">
-               <div class="track-step" id="pillProfiler"><div class="dot"></div></div>
-               <div class="track-step" id="pillSearch"><div class="dot"></div></div>
-               <div class="track-step" id="pillRanker"><div class="dot"></div></div>
-               <div class="track-step" id="pillPresenter"><div class="dot"></div></div>
+               <div class="track-step" id="pillProfiler"><div class="dot"></div><span class="step-label">Profiler</span></div>
+               <div class="track-step" id="pillSearch"><div class="dot"></div><span class="step-label">Search</span></div>
+               <div class="track-step" id="pillRanker"><div class="dot"></div><span class="step-label">Ranker</span></div>
+               <div class="track-step" id="pillPresenter"><div class="dot"></div><span class="step-label">Presenter</span></div>
              </div>
           </div>
           
@@ -120,6 +145,7 @@
         <article class="results-panel fade-in delay-4">
           <div class="results-header">
              <h2>Rekomendasi Terbaik</h2>
+             <span class="results-pill">Smart Match Feed</span>
              <p id="resultLead" class="result-lead">Masukan prompt di panel kiri untuk memulai iterasi.</p>
           </div>
           <div id="recommendationList" class="recommendation-grid"></div>

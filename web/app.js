@@ -18,6 +18,8 @@ const agentFlow = document.getElementById("agentFlow");
 const agentStageText = document.getElementById("agentStageText");
 const agentMetrics = document.getElementById("agentMetrics");
 const pipelinePanel = document.querySelector(".pipeline-panel");
+const trackContainer = document.querySelector(".track-container");
+const trackActive = document.querySelector(".track-active");
 const pillProfiler = document.getElementById("pillProfiler");
 const pillSearch = document.getElementById("pillSearch");
 const pillRanker = document.getElementById("pillRanker");
@@ -33,6 +35,8 @@ let runtimeFrameIndex = 0;
 let runtimeVisualState = "idle";
 let lastRuntimeFrameAt = 0;
 let currentRuntimeFrameSrc = "";
+let currentPreviewAudio = null;
+let currentPreviewButton = null;
 
 const prefersReducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
 const coarsePointerQuery = window.matchMedia("(pointer: coarse)");
@@ -136,6 +140,54 @@ function setAgentStage(stage, text) {
     pill.classList.toggle("active", n === stage);
     pill.classList.toggle("done", stage > 0 && n < stage);
   });
+  syncPipelineGeometry(stage);
+}
+
+function getDotCenterX(pill, containerRect) {
+  const dot = pill?.querySelector?.(".dot");
+  if (!dot) return null;
+  const dotRect = dot.getBoundingClientRect();
+  return dotRect.left - containerRect.left + (dotRect.width / 2);
+}
+
+function syncPipelineGeometry(stage) {
+  if (!trackContainer || !agentPixel || !trackActive) return;
+
+  const containerRect = trackContainer.getBoundingClientRect();
+  const dotCenters = stagePills
+    .map((pill) => getDotCenterX(pill, containerRect))
+    .filter((value) => typeof value === "number");
+
+  if (!dotCenters.length) return;
+
+  let targetX = 0;
+  if (stage <= 0) {
+    if (dotCenters.length > 1) {
+      const lead = dotCenters[1] - dotCenters[0];
+      targetX = Math.max(0, dotCenters[0] - (lead * 0.6));
+    } else {
+      targetX = Math.max(0, dotCenters[0] - 18);
+    }
+  } else {
+    targetX = dotCenters[Math.min(stage - 1, dotCenters.length - 1)];
+  }
+
+  agentPixel.style.left = `${targetX}px`;
+  trackActive.style.width = `${Math.max(0, targetX)}px`;
+}
+
+function bindPipelineGeometrySync() {
+  let rafId = 0;
+  const resync = () => {
+    if (rafId) cancelAnimationFrame(rafId);
+    rafId = requestAnimationFrame(() => {
+      const stage = Number(agentFlow?.dataset?.stage || 0);
+      syncPipelineGeometry(Number.isFinite(stage) ? stage : 0);
+    });
+  };
+
+  window.addEventListener("resize", resync, { passive: true });
+  resync();
 }
 
 function setAgentMetrics(text) {
@@ -256,6 +308,15 @@ function renderSummary(data) {
 
 function renderRecommendations(data) {
   recommendationList.innerHTML = "";
+  if (currentPreviewAudio) {
+    currentPreviewAudio.pause();
+    currentPreviewAudio = null;
+  }
+  if (currentPreviewButton) {
+    currentPreviewButton.setAttribute("aria-pressed", "false");
+    currentPreviewButton.textContent = "Play Preview";
+    currentPreviewButton = null;
+  }
   const list = data.recommendations || [];
 
   if (!list.length) {
@@ -304,6 +365,67 @@ function renderRecommendations(data) {
 
     const actions = document.createElement("div");
     actions.className = "track-actions";
+
+    if (item.preview_url) {
+      const previewBtn = document.createElement("button");
+      previewBtn.type = "button";
+      previewBtn.className = "preview-btn";
+      previewBtn.setAttribute("aria-pressed", "false");
+      previewBtn.textContent = "Play Preview";
+
+      previewBtn.addEventListener("click", () => {
+        const isCurrent = currentPreviewButton === previewBtn;
+
+        if (isCurrent && currentPreviewAudio && !currentPreviewAudio.paused) {
+          currentPreviewAudio.pause();
+          previewBtn.setAttribute("aria-pressed", "false");
+          previewBtn.textContent = "Play Preview";
+          return;
+        }
+
+        if (currentPreviewAudio) {
+          currentPreviewAudio.pause();
+        }
+        if (currentPreviewButton) {
+          currentPreviewButton.setAttribute("aria-pressed", "false");
+          currentPreviewButton.textContent = "Play Preview";
+        }
+
+        const audio = new Audio(item.preview_url);
+        audio.volume = 0.95;
+
+        audio.addEventListener("ended", () => {
+          previewBtn.setAttribute("aria-pressed", "false");
+          previewBtn.textContent = "Play Preview";
+          if (currentPreviewButton === previewBtn) {
+            currentPreviewButton = null;
+            currentPreviewAudio = null;
+          }
+        });
+
+        audio.addEventListener("pause", () => {
+          if (audio.ended) return;
+          previewBtn.setAttribute("aria-pressed", "false");
+          previewBtn.textContent = "Play Preview";
+        });
+
+        audio
+          .play()
+          .then(() => {
+            currentPreviewAudio = audio;
+            currentPreviewButton = previewBtn;
+            previewBtn.setAttribute("aria-pressed", "true");
+            previewBtn.textContent = "Pause Preview";
+          })
+          .catch(() => {
+            setStatus("Preview tidak bisa diputar di browser ini atau diblokir autoplay.", true);
+            previewBtn.setAttribute("aria-pressed", "false");
+            previewBtn.textContent = "Play Preview";
+          });
+      });
+
+      actions.appendChild(previewBtn);
+    }
 
     if (isLongReason) {
       const toggleWhy = document.createElement("button");
@@ -437,6 +559,15 @@ function renderRecommendations(data) {
 }
 
 function renderLoadingSkeleton(targetCount) {
+  if (currentPreviewAudio) {
+    currentPreviewAudio.pause();
+    currentPreviewAudio = null;
+  }
+  if (currentPreviewButton) {
+    currentPreviewButton.setAttribute("aria-pressed", "false");
+    currentPreviewButton.textContent = "Play Preview";
+    currentPreviewButton = null;
+  }
   const count = Math.max(4, Math.min(Number(targetCount) || 6, 8));
   recommendationList.innerHTML = "";
   resultLead.textContent = "Sedang menyiapkan daftar lagu paling cocok...";
@@ -617,6 +748,7 @@ form.addEventListener("submit", requestRecommendations);
 healthBtn.addEventListener("click", checkSpotifyHealth);
 bindQuickPrompts();
 bindRuntimePreferences();
+bindPipelineGeometrySync();
 startRuntimeFrameLoop();
 checkLlmHealth();
 checkSpotifyHealth();
