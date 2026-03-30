@@ -124,6 +124,14 @@ uvicorn app.main:app --reload
 
 Open the app at http://127.0.0.1:8000/
 
+## Demo
+
+<div align="center">
+  <img src="assets/demo/demo-1.gif" alt="SmartDiscover Demo 1" width="100%" />
+  <br /><br />
+  <img src="assets/demo/demo-1.2.gif" alt="SmartDiscover Demo 1.2" width="100%" />
+</div>
+
 ---
 
 ## Example User Prompts
