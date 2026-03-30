@@ -23,18 +23,22 @@
         <header class="hero">
           <div class="hero-badge fade-in">✨ Powered by Magic UI</div>
           <h1 class="gradient-title">SmartDiscover</h1>
-          <p class="subtitle">AI-Driven Spotify Curation in a single prompt.</p>
+          <p id="subtitleText" class="subtitle">AI-Driven Spotify Curation in a single prompt.</p>
+          <div class="lang-switch fade-in" id="langSwitch" role="group" aria-label="Language switch">
+            <button id="langIdBtn" class="lang-btn is-active" type="button" aria-pressed="true">ID</button>
+            <button id="langEnBtn" class="lang-btn" type="button" aria-pressed="false">EN</button>
+          </div>
         </header>
 
         <form id="recommendForm" class="control-form delay-1 fade-in">
           <div class="input-group">
-            <label for="intentInput">Apa mood atau aktivitasmu?</label>
+            <label id="intentLabel" for="intentInput">Apa mood atau aktivitasmu?</label>
             <textarea id="intentInput" rows="2" placeholder="contoh: lagu sedih pas nge-bug jam 2 pagi..." required></textarea>
           </div>
           
           <div class="input-group row-group">
              <div>
-                <label for="targetCountInput">Berapa Lagu?</label>
+               <label id="targetCountLabel" for="targetCountInput">Berapa Lagu?</label>
                <input id="targetCountInput" type="number" inputmode="numeric" min="5" max="50" value="15" />
              </div>
              
@@ -48,16 +52,16 @@
 
           <!-- Magic Shimmer Button -->
           <button id="submitBtn" class="shimmer-btn" type="submit">
-            <span class="shimmer-text">Mulai Kurasi</span>
+            <span id="submitText" class="shimmer-text">Mulai Kurasi</span>
           </button>
         </form>
 
         <div class="quick-prompts fade-in delay-2" id="quickPrompts">
-          <p class="label">Coba Prompt Bebas:</p>
+          <p id="quickPromptLabel" class="label">Coba Prompt Bebas:</p>
           <div class="chips">
-            <button class="chip-btn" type="button" data-intent="lagu fokus buat kerja malam hari">Fokus Kerja</button>
-            <button class="chip-btn" type="button" data-intent="jalanan hujan malam sendirian">Hujan Malam</button>
-            <button class="chip-btn" type="button" data-intent="workout keras angkat beban">Workout</button>
+            <button id="chipFocus" class="chip-btn" type="button" data-intent="lagu fokus buat kerja malam hari" data-intent-id="lagu fokus buat kerja malam hari" data-intent-en="focus songs for late night work">Fokus Kerja</button>
+            <button id="chipRain" class="chip-btn" type="button" data-intent="jalanan hujan malam sendirian" data-intent-id="jalanan hujan malam sendirian" data-intent-en="rainy midnight drive alone">Hujan Malam</button>
+            <button id="chipWorkout" class="chip-btn" type="button" data-intent="workout keras angkat beban" data-intent-id="workout keras angkat beban" data-intent-en="high energy gym workout mix">Workout</button>
           </div>
         </div>
 
@@ -71,16 +75,16 @@
       <main class="bento-content">
         <article class="insight-strip glass-panel fade-in delay-1" aria-label="Insight ringkas">
           <div class="insight-tile">
-            <p class="insight-label">Engine</p>
-            <p class="insight-value">Multi-Agent Music Graph</p>
+            <p id="insightEngineLabel" class="insight-label">Engine</p>
+            <p id="insightEngineValue" class="insight-value">Multi-Agent Music Graph</p>
           </div>
           <div class="insight-tile">
-            <p class="insight-label">Latency</p>
-            <p class="insight-value">Adaptive Fast Path</p>
+            <p id="insightLatencyLabel" class="insight-label">Latency</p>
+            <p id="insightLatencyValue" class="insight-value">Adaptive Fast Path</p>
           </div>
           <div class="insight-tile">
-            <p class="insight-label">Output</p>
-            <p class="insight-value">Ready-to-Play Picks</p>
+            <p id="insightOutputLabel" class="insight-label">Output</p>
+            <p id="insightOutputValue" class="insight-value">Ready-to-Play Picks</p>
           </div>
         </article>
 
@@ -97,7 +101,7 @@
           </div>
 
           <div class="pipeline-header">
-            <h3>Agent Neural Pipeline</h3>
+            <h3 id="pipelineTitle">Agent Neural Pipeline</h3>
             <span id="agentStageText" class="stage-text">Idle • Menunggu perintah</span>
           </div>
           
@@ -124,19 +128,19 @@
         <!-- Generation Settings / Info -->
         <article class="bento-stats fade-in delay-3">
           <div class="stat-box">
-            <span class="stat-label">Mood Terdeteksi</span>
+            <span id="statMoodLabel" class="stat-label">Mood Terdeteksi</span>
             <span id="summaryMood" class="stat-val">-</span>
           </div>
           <div class="stat-box">
-             <span class="stat-label">Aktivitas</span>
+             <span id="statActivityLabel" class="stat-label">Aktivitas</span>
              <span id="summaryActivity" class="stat-val">-</span>
           </div>
           <div class="stat-box">
-             <span class="stat-label">Jumlah Track</span>
+             <span id="statCountLabel" class="stat-label">Jumlah Track</span>
              <span id="summaryCount" class="stat-val">-</span>
           </div>
           <div class="stat-box">
-             <span class="stat-label">Engine Mode</span>
+             <span id="statModeLabel" class="stat-label">Engine Mode</span>
              <span id="summaryMode" class="stat-val">-</span>
           </div>
         </article>
@@ -144,13 +148,46 @@
         <!-- Dynamic Output -->
         <article class="results-panel fade-in delay-4">
           <div class="results-header">
-             <h2>Rekomendasi Terbaik</h2>
-             <span class="results-pill">Smart Match Feed</span>
+             <h2 id="resultsTitle">Rekomendasi Terbaik</h2>
+             <span id="resultsPill" class="results-pill">Smart Match Feed</span>
              <p id="resultLead" class="result-lead">Masukan prompt di panel kiri untuk memulai iterasi.</p>
           </div>
           <div id="recommendationList" class="recommendation-grid"></div>
         </article>
       </main>
+    </div>
+
+    <div id="trackDetailModal" class="track-detail-modal" aria-hidden="true">
+      <button id="trackDetailOverlay" class="track-detail-overlay" type="button" aria-label="Close"></button>
+      <section class="track-detail-sheet" role="dialog" aria-modal="true" aria-labelledby="trackDetailTitle">
+        <header class="track-detail-head">
+          <h3 id="trackDetailTitle">Track Detail</h3>
+          <button id="trackDetailCloseBtn" class="track-detail-close" type="button" aria-label="Close">✕</button>
+        </header>
+
+        <div class="track-detail-body">
+          <p id="trackDetailSong" class="track-detail-song">-</p>
+          <p id="trackDetailArtist" class="track-detail-artist">-</p>
+
+          <div class="track-detail-meta-grid">
+            <div class="track-detail-meta-item">
+              <span id="trackDetailScoreLabel" class="track-detail-label">Score</span>
+              <span id="trackDetailScoreValue" class="track-detail-value">-</span>
+            </div>
+            <div class="track-detail-meta-item">
+              <span id="trackDetailPreviewLabel" class="track-detail-label">Preview</span>
+              <span id="trackDetailPreviewValue" class="track-detail-value">-</span>
+            </div>
+          </div>
+
+          <div class="track-detail-reason">
+            <p id="trackDetailReasonLabel" class="track-detail-label">Reason</p>
+            <p id="trackDetailReasonText" class="track-detail-reason-text">-</p>
+          </div>
+
+          <a id="trackDetailSpotifyLink" class="track-detail-link" href="#" target="_blank" rel="noopener noreferrer">Open in Spotify</a>
+        </div>
+      </section>
     </div>
 
     <script src="/static/app.js"></script>

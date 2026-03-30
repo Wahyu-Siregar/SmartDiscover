@@ -24,6 +24,44 @@ const pillProfiler = document.getElementById("pillProfiler");
 const pillSearch = document.getElementById("pillSearch");
 const pillRanker = document.getElementById("pillRanker");
 const pillPresenter = document.getElementById("pillPresenter");
+const langIdBtn = document.getElementById("langIdBtn");
+const langEnBtn = document.getElementById("langEnBtn");
+const langSwitch = document.getElementById("langSwitch");
+const trackDetailModal = document.getElementById("trackDetailModal");
+const trackDetailOverlay = document.getElementById("trackDetailOverlay");
+const trackDetailCloseBtn = document.getElementById("trackDetailCloseBtn");
+const trackDetailTitle = document.getElementById("trackDetailTitle");
+const trackDetailSong = document.getElementById("trackDetailSong");
+const trackDetailArtist = document.getElementById("trackDetailArtist");
+const trackDetailScoreLabel = document.getElementById("trackDetailScoreLabel");
+const trackDetailScoreValue = document.getElementById("trackDetailScoreValue");
+const trackDetailPreviewLabel = document.getElementById("trackDetailPreviewLabel");
+const trackDetailPreviewValue = document.getElementById("trackDetailPreviewValue");
+const trackDetailReasonLabel = document.getElementById("trackDetailReasonLabel");
+const trackDetailReasonText = document.getElementById("trackDetailReasonText");
+const trackDetailSpotifyLink = document.getElementById("trackDetailSpotifyLink");
+
+const subtitleText = document.getElementById("subtitleText");
+const intentLabel = document.getElementById("intentLabel");
+const targetCountLabel = document.getElementById("targetCountLabel");
+const submitText = document.getElementById("submitText");
+const quickPromptLabel = document.getElementById("quickPromptLabel");
+const chipFocus = document.getElementById("chipFocus");
+const chipRain = document.getElementById("chipRain");
+const chipWorkout = document.getElementById("chipWorkout");
+const insightEngineLabel = document.getElementById("insightEngineLabel");
+const insightEngineValue = document.getElementById("insightEngineValue");
+const insightLatencyLabel = document.getElementById("insightLatencyLabel");
+const insightLatencyValue = document.getElementById("insightLatencyValue");
+const insightOutputLabel = document.getElementById("insightOutputLabel");
+const insightOutputValue = document.getElementById("insightOutputValue");
+const pipelineTitle = document.getElementById("pipelineTitle");
+const statMoodLabel = document.getElementById("statMoodLabel");
+const statActivityLabel = document.getElementById("statActivityLabel");
+const statCountLabel = document.getElementById("statCountLabel");
+const statModeLabel = document.getElementById("statModeLabel");
+const resultsTitle = document.getElementById("resultsTitle");
+const resultsPill = document.getElementById("resultsPill");
 
 let agentStageTimer = null;
 let replayToken = 0;
@@ -43,6 +81,373 @@ let currentPreviewElapsed = null;
 let currentPreviewDuration = null;
 let currentPreviewMeter = null;
 let currentPreviewRaf = 0;
+let lastRenderedData = null;
+let lastRenderedSourceText = "";
+let currentDetailItem = null;
+
+const LANG_STORAGE_KEY = "smartdiscover_lang";
+const supportedLangs = new Set(["id", "en"]);
+let currentLang = localStorage.getItem(LANG_STORAGE_KEY) || "id";
+if (!supportedLangs.has(currentLang)) {
+  currentLang = "id";
+}
+
+const I18N = {
+  id: {
+    subtitle: "AI-Driven Spotify Curation in a single prompt.",
+    intentLabel: "Apa mood atau aktivitasmu?",
+    intentPlaceholder: "contoh: lagu sedih pas nge-bug jam 2 pagi...",
+    targetCountLabel: "Berapa Lagu?",
+    submit: "Mulai Kurasi",
+    quickPromptLabel: "Coba Prompt Bebas:",
+    chipFocus: "Fokus Kerja",
+    chipRain: "Hujan Malam",
+    chipWorkout: "Workout",
+    connectSpotify: "Connect Spotify",
+    checkHealth: "Check Health",
+    insightEngineLabel: "Engine",
+    insightEngineValue: "Multi-Agent Music Graph",
+    insightLatencyLabel: "Latency",
+    insightLatencyValue: "Adaptive Fast Path",
+    insightOutputLabel: "Output",
+    insightOutputValue: "Ready-to-Play Picks",
+    pipelineTitle: "Agent Neural Pipeline",
+    stageIdle: "Idle • Menunggu perintah",
+    stageProfiler: "Profiler Agent • Memahami mood dan aktivitas",
+    stageSearch: "Spotify Search Agent • Menelusuri kandidat lagu",
+    stageRanker: "Filter & Ranker Agent • Menilai relevansi",
+    stagePresenter: "Presenter Agent • Menyusun hasil terbaik",
+    stageDone: "Selesai • Playlist siap diputar",
+    stageStopped: "Terhenti • Coba lagi",
+    metricsDefault: "Milestone backend akan tampil setelah request selesai.",
+    metricsWorking: "Merekam progres backend...",
+    metricsDone: "Pipeline selesai. Semua agent telah mengeksekusi tahapan dengan sukses.",
+    metricsDoneSimple: "Pipeline selesai. Playlist siap diputar.",
+    metricsError: "Milestone backend tidak tersedia karena request gagal.",
+    statMood: "Mood Terdeteksi",
+    statActivity: "Aktivitas",
+    statCount: "Jumlah Track",
+    statMode: "Engine Mode",
+    resultsTitle: "Rekomendasi Terbaik",
+    resultsPill: "Smart Match Feed",
+    resultLeadInitial: "Masukan prompt di panel kiri untuk memulai iterasi.",
+    resultLeadNoResult: "Belum ada hasil yang cocok. Ubah deskripsi mood atau aktivitas untuk hasil yang lebih pas.",
+    emptyNoRecommendation: "Belum ada rekomendasi. Coba ubah deskripsi mood kamu.",
+    resultLeadFound: "{count} lagu dipilih untuk kamu. Klik alasan jika ingin melihat detail lebih banyak.",
+    matchLabel: "match",
+    scoreLabel: "score",
+    whyFallback: "Alasan belum tersedia.",
+    previewPlay: "Play",
+    previewPause: "Pause",
+    previewNoPreview: "No Preview",
+    previewUnavailable: "preview unavailable",
+    previewLabel: "preview",
+    previewAriaPlay: "Play preview 30 detik",
+    previewAriaPause: "Pause preview",
+    previewAriaUnavailable: "Preview tidak tersedia untuk track ini",
+    previewAriaMeter: "Progress preview lagu",
+    previewAutoplayError: "Preview tidak bisa diputar di browser ini atau diblokir autoplay.",
+    seeReason: "Lihat alasan",
+    hideReason: "Sembunyikan",
+    detailButton: "Detail",
+    detailTitle: "Detail Lagu",
+    detailScore: "Score",
+    detailPreview: "Preview",
+    detailReason: "Alasan",
+    detailPreviewAvailable: "Tersedia",
+    detailPreviewUnavailable: "Tidak tersedia",
+    detailCloseAria: "Tutup",
+    openSpotify: "Buka di Spotify",
+    exportSave: "Save as Spotify Playlist",
+    exportLogin: "Login to Save to Spotify",
+    exportCreating: "Creating Playlist...",
+    exportCreated: "Playlist Created! (Click to Open)",
+    exportErrorTryAgain: "Error. Try Again",
+    exportSuccessStatus: "Berhasil! Playlist telah disimpan ke akun Spotify kamu.",
+    exportFailed: "Gagal export playlist: {error}",
+    spotifyExpired: "Spotify session expired. Please connect Spotify again.",
+    genericFailedPlaylist: "Gagal membuat playlist",
+    loadingLead: "Sedang menyiapkan daftar lagu paling cocok...",
+    intentRequired: "Intent wajib diisi.",
+    searching: "Mencari rekomendasi terbaik untuk kamu...",
+    foundStatus: "{count} lagu ditemukan. Profiler={profilerMode}, Ranker={rankerMode}.",
+    requestErrorDefault: "Terjadi error saat memanggil API.",
+    loadError: "Gagal memuat rekomendasi. Coba lagi sebentar.",
+    loadErrorLead: "Terjadi kendala saat mengambil rekomendasi.",
+    llmChecking: "LLM: checking...",
+    llmOnline: "LLM: online ({model})",
+    llmReadyStatus: "LLM ready on model {model}.",
+    llmDisabled: "LLM: disabled (fallback active)",
+    llmDegraded: "LLM: degraded",
+    llmStatus: "LLM status: {status}. {details}",
+    llmUnreachable: "LLM: unreachable",
+    llmHealthError: "Gagal cek LLM health.",
+    spotifyCheckingStatus: "Checking Spotify health...",
+    spotifyOnline: "Spotify: online",
+    spotifyMock: "Spotify: mock mode",
+    spotifyDegraded: "Spotify: degraded",
+    spotifyStatus: "Spotify: {status}.{detail}",
+    spotifyUnreachable: "Spotify: unreachable",
+    spotifyHealthError: "Gagal cek Spotify health.",
+    promptFilled: "Contoh intent terisi. Kamu bisa langsung cari rekomendasi.",
+    oauthSuccess: "Berhasil login! Akun Spotify siap digunakan untuk menyimpan playlist.",
+    spotifyConnected: "Spotify Connected ✓",
+  },
+  en: {
+    subtitle: "AI-Driven Spotify curation in a single prompt.",
+    intentLabel: "What is your mood or activity?",
+    intentPlaceholder: "example: sad songs while fixing bugs at 2 AM...",
+    targetCountLabel: "How Many Songs?",
+    submit: "Start Curation",
+    quickPromptLabel: "Try Quick Prompts:",
+    chipFocus: "Work Focus",
+    chipRain: "Rainy Night",
+    chipWorkout: "Workout",
+    connectSpotify: "Connect Spotify",
+    checkHealth: "Check Health",
+    insightEngineLabel: "Engine",
+    insightEngineValue: "Multi-Agent Music Graph",
+    insightLatencyLabel: "Latency",
+    insightLatencyValue: "Adaptive Fast Path",
+    insightOutputLabel: "Output",
+    insightOutputValue: "Ready-to-Play Picks",
+    pipelineTitle: "Agent Neural Pipeline",
+    stageIdle: "Idle • Waiting for command",
+    stageProfiler: "Profiler Agent • Understanding mood and activity",
+    stageSearch: "Spotify Search Agent • Retrieving candidate tracks",
+    stageRanker: "Filter & Ranker Agent • Evaluating relevance",
+    stagePresenter: "Presenter Agent • Assembling best results",
+    stageDone: "Done • Playlist ready to play",
+    stageStopped: "Stopped • Please try again",
+    metricsDefault: "Backend milestones will appear after a request finishes.",
+    metricsWorking: "Capturing backend progress...",
+    metricsDone: "Pipeline finished. All agents executed successfully.",
+    metricsDoneSimple: "Pipeline finished. Playlist is ready.",
+    metricsError: "Backend milestones are unavailable because the request failed.",
+    statMood: "Detected Mood",
+    statActivity: "Activity",
+    statCount: "Track Count",
+    statMode: "Engine Mode",
+    resultsTitle: "Top Recommendations",
+    resultsPill: "Smart Match Feed",
+    resultLeadInitial: "Enter a prompt on the left panel to start the pipeline.",
+    resultLeadNoResult: "No matching results yet. Adjust your mood or activity description for better recommendations.",
+    emptyNoRecommendation: "No recommendations yet. Try refining your mood description.",
+    resultLeadFound: "{count} songs were selected for you. Click reason to see more details.",
+    matchLabel: "match",
+    scoreLabel: "score",
+    whyFallback: "Reason is not available yet.",
+    previewPlay: "Play",
+    previewPause: "Pause",
+    previewNoPreview: "No Preview",
+    previewUnavailable: "preview unavailable",
+    previewLabel: "preview",
+    previewAriaPlay: "Play 30-second preview",
+    previewAriaPause: "Pause preview",
+    previewAriaUnavailable: "Preview is unavailable for this track",
+    previewAriaMeter: "Track preview progress",
+    previewAutoplayError: "Preview cannot be played in this browser or autoplay is blocked.",
+    seeReason: "See reason",
+    hideReason: "Hide",
+    detailButton: "Details",
+    detailTitle: "Track Details",
+    detailScore: "Score",
+    detailPreview: "Preview",
+    detailReason: "Reason",
+    detailPreviewAvailable: "Available",
+    detailPreviewUnavailable: "Unavailable",
+    detailCloseAria: "Close",
+    openSpotify: "Open in Spotify",
+    exportSave: "Save as Spotify Playlist",
+    exportLogin: "Login to Save to Spotify",
+    exportCreating: "Creating Playlist...",
+    exportCreated: "Playlist Created! (Click to Open)",
+    exportErrorTryAgain: "Error. Try Again",
+    exportSuccessStatus: "Success! Playlist has been saved to your Spotify account.",
+    exportFailed: "Failed to export playlist: {error}",
+    spotifyExpired: "Spotify session expired. Please connect Spotify again.",
+    genericFailedPlaylist: "Failed to create playlist",
+    loadingLead: "Preparing the most relevant song list...",
+    intentRequired: "Intent is required.",
+    searching: "Finding the best recommendations for you...",
+    foundStatus: "{count} songs found. Profiler={profilerMode}, Ranker={rankerMode}.",
+    requestErrorDefault: "An error occurred while calling the API.",
+    loadError: "Failed to load recommendations. Please try again shortly.",
+    loadErrorLead: "There was a problem while fetching recommendations.",
+    llmChecking: "LLM: checking...",
+    llmOnline: "LLM: online ({model})",
+    llmReadyStatus: "LLM is ready on model {model}.",
+    llmDisabled: "LLM: disabled (fallback active)",
+    llmDegraded: "LLM: degraded",
+    llmStatus: "LLM status: {status}. {details}",
+    llmUnreachable: "LLM: unreachable",
+    llmHealthError: "Failed to check LLM health.",
+    spotifyCheckingStatus: "Checking Spotify health...",
+    spotifyOnline: "Spotify: online",
+    spotifyMock: "Spotify: mock mode",
+    spotifyDegraded: "Spotify: degraded",
+    spotifyStatus: "Spotify: {status}.{detail}",
+    spotifyUnreachable: "Spotify: unreachable",
+    spotifyHealthError: "Failed to check Spotify health.",
+    promptFilled: "Sample intent applied. You can run recommendations now.",
+    oauthSuccess: "Login successful! Spotify is ready for playlist export.",
+    spotifyConnected: "Spotify Connected ✓",
+  },
+};
+
+function tr(key, vars = {}) {
+  const table = I18N[currentLang] || I18N.id;
+  const fallback = I18N.id[key] || key;
+  const template = table[key] || fallback;
+  return String(template).replace(/\{(\w+)\}/g, (_, name) => {
+    const value = vars[name];
+    return value === undefined || value === null ? "" : String(value);
+  });
+}
+
+function applyLanguageUI() {
+  document.documentElement.lang = currentLang;
+  if (subtitleText) subtitleText.textContent = tr("subtitle");
+  if (intentLabel) intentLabel.textContent = tr("intentLabel");
+  if (intentInput) intentInput.setAttribute("placeholder", tr("intentPlaceholder"));
+  if (targetCountLabel) targetCountLabel.textContent = tr("targetCountLabel");
+  if (submitText) submitText.textContent = tr("submit");
+  if (quickPromptLabel) quickPromptLabel.textContent = tr("quickPromptLabel");
+  if (chipFocus) chipFocus.textContent = tr("chipFocus");
+  if (chipRain) chipRain.textContent = tr("chipRain");
+  if (chipWorkout) chipWorkout.textContent = tr("chipWorkout");
+  if (healthBtn) healthBtn.textContent = tr("checkHealth");
+  if (insightEngineLabel) insightEngineLabel.textContent = tr("insightEngineLabel");
+  if (insightEngineValue) insightEngineValue.textContent = tr("insightEngineValue");
+  if (insightLatencyLabel) insightLatencyLabel.textContent = tr("insightLatencyLabel");
+  if (insightLatencyValue) insightLatencyValue.textContent = tr("insightLatencyValue");
+  if (insightOutputLabel) insightOutputLabel.textContent = tr("insightOutputLabel");
+  if (insightOutputValue) insightOutputValue.textContent = tr("insightOutputValue");
+  if (pipelineTitle) pipelineTitle.textContent = tr("pipelineTitle");
+  if (statMoodLabel) statMoodLabel.textContent = tr("statMood");
+  if (statActivityLabel) statActivityLabel.textContent = tr("statActivity");
+  if (statCountLabel) statCountLabel.textContent = tr("statCount");
+  if (statModeLabel) statModeLabel.textContent = tr("statMode");
+  if (resultsTitle) resultsTitle.textContent = tr("resultsTitle");
+  if (resultsPill) resultsPill.textContent = tr("resultsPill");
+  if (!recommendationList?.childElementCount && resultLead) {
+    resultLead.textContent = tr("resultLeadInitial");
+  }
+
+  if (spotifyLoginBtn && !localStorage.getItem("spotify_token")) {
+    spotifyLoginBtn.textContent = tr("connectSpotify");
+  }
+
+  if (trackDetailTitle) trackDetailTitle.textContent = tr("detailTitle");
+  if (trackDetailScoreLabel) trackDetailScoreLabel.textContent = tr("detailScore");
+  if (trackDetailPreviewLabel) trackDetailPreviewLabel.textContent = tr("detailPreview");
+  if (trackDetailReasonLabel) trackDetailReasonLabel.textContent = tr("detailReason");
+  if (trackDetailCloseBtn) trackDetailCloseBtn.setAttribute("aria-label", tr("detailCloseAria"));
+  if (trackDetailOverlay) trackDetailOverlay.setAttribute("aria-label", tr("detailCloseAria"));
+
+  if (langIdBtn && langEnBtn) {
+    const isId = currentLang === "id";
+    langIdBtn.classList.toggle("is-active", isId);
+    langEnBtn.classList.toggle("is-active", !isId);
+    langIdBtn.setAttribute("aria-pressed", String(isId));
+    langEnBtn.setAttribute("aria-pressed", String(!isId));
+  }
+}
+
+function setLanguage(lang) {
+  if (!supportedLangs.has(lang)) return;
+  currentLang = lang;
+  localStorage.setItem(LANG_STORAGE_KEY, lang);
+  applyLanguageUI();
+  setAgentStage(Number(agentFlow?.dataset?.stage || 0), getStageText(Number(agentFlow?.dataset?.stage || 0)));
+  if (lastRenderedData) {
+    renderRecommendations(lastRenderedData, lastRenderedSourceText);
+  }
+  if (currentDetailItem) {
+    renderTrackDetailContent(currentDetailItem);
+  }
+}
+
+function renderTrackDetailContent(item) {
+  if (!item) return;
+  currentDetailItem = item;
+  if (trackDetailSong) trackDetailSong.textContent = item.title || "-";
+  if (trackDetailArtist) trackDetailArtist.textContent = item.artist || "-";
+  if (trackDetailScoreValue) trackDetailScoreValue.textContent = `${Math.round(Number(item.score || 0) * 100)}%`;
+  if (trackDetailPreviewValue) trackDetailPreviewValue.textContent = item.preview_url ? tr("detailPreviewAvailable") : tr("detailPreviewUnavailable");
+  if (trackDetailReasonText) trackDetailReasonText.textContent = item.why || tr("whyFallback");
+  if (trackDetailSpotifyLink) {
+    trackDetailSpotifyLink.textContent = tr("openSpotify");
+    if (item.spotify_url) {
+      trackDetailSpotifyLink.href = item.spotify_url;
+      trackDetailSpotifyLink.style.display = "inline-flex";
+    } else {
+      trackDetailSpotifyLink.href = "#";
+      trackDetailSpotifyLink.style.display = "none";
+    }
+  }
+}
+
+function openTrackDetailModal(item) {
+  if (!trackDetailModal || !item) return;
+  renderTrackDetailContent(item);
+  trackDetailModal.classList.add("is-open");
+  trackDetailModal.setAttribute("aria-hidden", "false");
+  document.body.classList.add("modal-open");
+}
+
+function closeTrackDetailModal() {
+  if (!trackDetailModal) return;
+  trackDetailModal.classList.remove("is-open");
+  trackDetailModal.setAttribute("aria-hidden", "true");
+  document.body.classList.remove("modal-open");
+}
+
+function bindTrackDetailModal() {
+  if (trackDetailOverlay) {
+    trackDetailOverlay.addEventListener("click", closeTrackDetailModal);
+  }
+  if (trackDetailCloseBtn) {
+    trackDetailCloseBtn.addEventListener("click", closeTrackDetailModal);
+  }
+  window.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      closeTrackDetailModal();
+    }
+  });
+}
+
+function bindLanguageSwitch() {
+  if (langSwitch) {
+    langSwitch.addEventListener("click", (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      const button = target.closest(".lang-btn");
+      if (!(button instanceof HTMLButtonElement)) return;
+      if (button.id === "langIdBtn") {
+        setLanguage("id");
+      } else if (button.id === "langEnBtn") {
+        setLanguage("en");
+      }
+    });
+    return;
+  }
+
+  if (langIdBtn) {
+    langIdBtn.addEventListener("click", () => setLanguage("id"));
+  }
+  if (langEnBtn) {
+    langEnBtn.addEventListener("click", () => setLanguage("en"));
+  }
+}
+
+function getStageText(stage) {
+  if (stage === 1) return tr("stageProfiler");
+  if (stage === 2) return tr("stageSearch");
+  if (stage === 3) return tr("stageRanker");
+  if (stage === 4) return tr("stagePresenter");
+  return tr("stageIdle");
+}
 
 const prefersReducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
 const coarsePointerQuery = window.matchMedia("(pointer: coarse)");
@@ -294,7 +699,7 @@ function updatePreviewProgressUI() {
   }
   currentPreviewElapsed.textContent = formatPreviewTime(currentTime);
   if (currentPreviewDuration) {
-    currentPreviewDuration.textContent = `${formatPreviewTime(duration)} preview`;
+    currentPreviewDuration.textContent = `${formatPreviewTime(duration)} ${tr("previewLabel")}`;
   }
 
   if (!currentPreviewAudio.paused && !currentPreviewAudio.ended) {
@@ -307,8 +712,8 @@ function updatePreviewProgressUI() {
 function resetCurrentPreviewUI() {
   if (currentPreviewButton) {
     currentPreviewButton.setAttribute("aria-pressed", "false");
-    currentPreviewButton.setAttribute("aria-label", "Play preview 30 detik");
-    currentPreviewButton.textContent = "Play";
+    currentPreviewButton.setAttribute("aria-label", tr("previewAriaPlay"));
+    currentPreviewButton.textContent = tr("previewPlay");
   }
   if (currentPreviewCard) {
     currentPreviewCard.classList.remove("is-preview-playing");
@@ -342,10 +747,10 @@ function clearCurrentPreviewState() {
 async function replayStagesFromMetrics(stageMs) {
   const token = ++replayToken;
   const sequence = [
-    [1, "Profiler Agent • Memahami mood dan aktivitas", Number(stageMs?.profiler || 0)],
-    [2, "Spotify Search Agent • Menelusuri kandidat lagu", Number(stageMs?.search || 0)],
-    [3, "Filter & Ranker Agent • Menilai relevansi", Number(stageMs?.ranker || 0)],
-    [4, "Presenter Agent • Menyusun hasil terbaik", Number(stageMs?.presenter || 0)],
+    [1, tr("stageProfiler"), Number(stageMs?.profiler || 0)],
+    [2, tr("stageSearch"), Number(stageMs?.search || 0)],
+    [3, tr("stageRanker"), Number(stageMs?.ranker || 0)],
+    [4, tr("stagePresenter"), Number(stageMs?.presenter || 0)],
   ];
 
   agentFlow.classList.add("is-working");
@@ -365,7 +770,7 @@ async function replayStagesFromMetrics(stageMs) {
   }
   agentFlow.classList.remove("is-working");
   agentFlow.classList.add("is-done");
-  setAgentStage(4, "Selesai • Playlist siap diputar");
+  setAgentStage(4, tr("stageDone"));
   setRuntimeVisualState("done");
 }
 
@@ -381,17 +786,17 @@ function stopAgentAnimation(isSuccess, stageMs = null) {
 
   if (isSuccess) {
     if (stageMs) {
-      setAgentMetrics("Pipeline selesai. Semua agent telah mengeksekusi tahapan dengan sukses.");
+      setAgentMetrics(tr("metricsDone"));
       replayStagesFromMetrics(stageMs);
     } else {
-      setAgentStage(4, "Selesai • Playlist siap diputar");
+      setAgentStage(4, tr("stageDone"));
       setRuntimeVisualState("done");
-      setAgentMetrics("Pipeline selesai. Playlist siap diputar.");
+      setAgentMetrics(tr("metricsDoneSimple"));
     }
   } else {
-    setAgentStage(0, "Terhenti • Coba lagi");
+    setAgentStage(0, tr("stageStopped"));
     setRuntimeVisualState("error");
-    setAgentMetrics("Milestone backend tidak tersedia karena request gagal.");
+    setAgentMetrics(tr("metricsError"));
   }
 }
 
@@ -401,16 +806,16 @@ function startAgentAnimation() {
   }
 
   const stages = [
-    [1, "Profiler Agent • Memahami mood dan aktivitas"],
-    [2, "Spotify Search Agent • Menelusuri kandidat lagu"],
-    [3, "Filter & Ranker Agent • Menilai relevansi"],
-    [4, "Presenter Agent • Menyusun hasil terbaik"],
+    [1, tr("stageProfiler")],
+    [2, tr("stageSearch")],
+    [3, tr("stageRanker")],
+    [4, tr("stagePresenter")],
   ];
 
   let idx = 0;
   agentFlow.classList.remove("is-done");
   agentFlow.classList.add("is-working");
-  setAgentMetrics("Merekam progres backend...");
+  setAgentMetrics(tr("metricsWorking"));
   setAgentStage(stages[idx][0], stages[idx][1]);
 
   agentStageTimer = setInterval(() => {
@@ -433,17 +838,19 @@ function renderSummary(data) {
 }
 
 function renderRecommendations(data, sourceText = "") {
+  lastRenderedData = data;
+  lastRenderedSourceText = sourceText;
   recommendationList.innerHTML = "";
   clearCurrentPreviewState();
   const list = data.recommendations || [];
 
   if (!list.length) {
-    recommendationList.innerHTML = "<p class=\"empty-state\">Belum ada rekomendasi. Coba ubah deskripsi mood kamu.</p>";
-    resultLead.textContent = "Belum ada hasil yang cocok. Ubah deskripsi mood atau aktivitas untuk hasil yang lebih pas.";
+    recommendationList.innerHTML = `<p class=\"empty-state\">${tr("emptyNoRecommendation")}</p>`;
+    resultLead.textContent = tr("resultLeadNoResult");
     return;
   }
 
-  resultLead.textContent = `${list.length} lagu dipilih untuk kamu. Klik alasan jika ingin melihat detail lebih banyak.`;
+  resultLead.textContent = tr("resultLeadFound", { count: list.length });
 
   list.forEach((item, index) => {
     const card = document.createElement("article");
@@ -459,7 +866,7 @@ function renderRecommendations(data, sourceText = "") {
 
     const score = document.createElement("p");
     score.className = "track-score";
-    score.textContent = `match ${Math.round(Number(item.score || 0) * 100)}%`;
+    score.textContent = `${tr("matchLabel")} ${Math.round(Number(item.score || 0) * 100)}%`;
 
     top.appendChild(rank);
     top.appendChild(score);
@@ -470,11 +877,11 @@ function renderRecommendations(data, sourceText = "") {
 
     const meta = document.createElement("p");
     meta.className = "track-meta";
-    meta.textContent = `${item.artist} | score: ${Number(item.score).toFixed(4)}`;
+    meta.textContent = `${item.artist} | ${tr("scoreLabel")}: ${Number(item.score).toFixed(4)}`;
 
     const why = document.createElement("p");
     why.className = "track-why";
-    why.textContent = item.why || "Alasan belum tersedia.";
+    why.textContent = item.why || tr("whyFallback");
 
     const isLongReason = why.textContent.length > 110;
     if (isLongReason) {
@@ -496,13 +903,13 @@ function renderRecommendations(data, sourceText = "") {
       previewBtn.type = "button";
       previewBtn.className = "preview-btn";
       previewBtn.setAttribute("aria-pressed", "false");
-      previewBtn.setAttribute("aria-label", "Play preview 30 detik");
-      previewBtn.textContent = "Play";
+      previewBtn.setAttribute("aria-label", tr("previewAriaPlay"));
+      previewBtn.textContent = tr("previewPlay");
 
       const previewMeter = document.createElement("div");
       previewMeter.className = "preview-meter";
       previewMeter.setAttribute("role", "progressbar");
-      previewMeter.setAttribute("aria-label", "Progress preview lagu");
+      previewMeter.setAttribute("aria-label", tr("previewAriaMeter"));
       previewMeter.setAttribute("aria-valuemin", "0");
       previewMeter.setAttribute("aria-valuemax", "100");
       previewMeter.setAttribute("aria-valuenow", "0");
@@ -518,15 +925,15 @@ function renderRecommendations(data, sourceText = "") {
       elapsed.textContent = "0:00";
 
       const duration = document.createElement("span");
-      duration.textContent = hasPreview ? "0:30 preview" : "preview unavailable";
+      duration.textContent = hasPreview ? `0:30 ${tr("previewLabel")}` : tr("previewUnavailable");
 
       previewTime.appendChild(elapsed);
       previewTime.appendChild(duration);
 
       if (!hasPreview) {
         previewBtn.disabled = true;
-        previewBtn.setAttribute("aria-label", "Preview tidak tersedia untuk track ini");
-        previewBtn.textContent = "No Preview";
+        previewBtn.setAttribute("aria-label", tr("previewAriaUnavailable"));
+        previewBtn.textContent = tr("previewNoPreview");
       }
 
       previewCluster.appendChild(previewBtn);
@@ -551,7 +958,7 @@ function renderRecommendations(data, sourceText = "") {
 
         audio.addEventListener("loadedmetadata", () => {
           if (duration) {
-            duration.textContent = `${formatPreviewTime(audio.duration || 30)} preview`;
+            duration.textContent = `${formatPreviewTime(audio.duration || 30)} ${tr("previewLabel")}`;
           }
         });
 
@@ -585,16 +992,16 @@ function renderRecommendations(data, sourceText = "") {
             currentPreviewDuration = duration;
             currentPreviewMeter = previewMeter;
             previewBtn.setAttribute("aria-pressed", "true");
-            previewBtn.setAttribute("aria-label", "Pause preview");
-            previewBtn.textContent = "Pause";
+            previewBtn.setAttribute("aria-label", tr("previewAriaPause"));
+            previewBtn.textContent = tr("previewPause");
             card.classList.add("is-preview-playing");
             updatePreviewProgressUI();
           })
           .catch(() => {
-            setStatus("Preview tidak bisa diputar di browser ini atau diblokir autoplay.", true);
+            setStatus(tr("previewAutoplayError"), true);
             previewBtn.setAttribute("aria-pressed", "false");
-            previewBtn.setAttribute("aria-label", "Play preview 30 detik");
-            previewBtn.textContent = "Play";
+            previewBtn.setAttribute("aria-label", tr("previewAriaPlay"));
+            previewBtn.textContent = tr("previewPlay");
           });
         });
       }
@@ -602,17 +1009,14 @@ function renderRecommendations(data, sourceText = "") {
       actions.appendChild(previewCluster);
     }
 
-    if (isLongReason) {
-      const toggleWhy = document.createElement("button");
-      toggleWhy.className = "text-btn";
-      toggleWhy.type = "button";
-      toggleWhy.textContent = "Lihat alasan";
-      toggleWhy.addEventListener("click", () => {
-        const collapsed = why.classList.toggle("collapsed");
-        toggleWhy.textContent = collapsed ? "Lihat alasan" : "Sembunyikan";
-      });
-      actions.appendChild(toggleWhy);
-    }
+    const detailBtn = document.createElement("button");
+    detailBtn.className = "text-btn";
+    detailBtn.type = "button";
+    detailBtn.textContent = tr("detailButton");
+    detailBtn.addEventListener("click", () => {
+      openTrackDetailModal(item);
+    });
+    actions.appendChild(detailBtn);
 
     card.appendChild(top);
     card.appendChild(title);
@@ -625,7 +1029,7 @@ function renderRecommendations(data, sourceText = "") {
       link.href = item.spotify_url;
       link.target = "_blank";
       link.rel = "noopener noreferrer";
-      link.textContent = "Buka di Spotify";
+      link.textContent = tr("openSpotify");
       actions.appendChild(link);
     }
 
@@ -653,7 +1057,7 @@ function renderRecommendations(data, sourceText = "") {
     exportBtn.onmouseout = () => { exportBtn.style.transform = "scale(1)"; };
 
     const hasToken = !!localStorage.getItem("spotify_token");
-    exportBtn.textContent = hasToken ? "Save as Spotify Playlist" : "Login to Save to Spotify";
+    exportBtn.textContent = hasToken ? tr("exportSave") : tr("exportLogin");
 
     exportBtn.addEventListener("click", async () => {
       if (!hasToken) {
@@ -662,7 +1066,7 @@ function renderRecommendations(data, sourceText = "") {
       }
       
       exportBtn.disabled = true;
-      exportBtn.textContent = "Creating Playlist...";
+      exportBtn.textContent = tr("exportCreating");
       exportBtn.style.opacity = "0.7";
       
       try {
@@ -696,13 +1100,13 @@ function renderRecommendations(data, sourceText = "") {
           if (res.status === 401) {
             localStorage.removeItem("spotify_token");
             if (spotifyLoginBtn) {
-              spotifyLoginBtn.textContent = "Connect Spotify";
+              spotifyLoginBtn.textContent = tr("connectSpotify");
               spotifyLoginBtn.style.backgroundColor = "transparent";
               spotifyLoginBtn.style.border = "1px solid rgba(255,255,255,0.2)";
               spotifyLoginBtn.style.color = "#ccc";
               spotifyLoginBtn.disabled = false;
             }
-            throw new Error("Spotify session expired. Please connect Spotify again.");
+            throw new Error(tr("spotifyExpired"));
           }
 
           throw new Error(
@@ -711,20 +1115,20 @@ function renderRecommendations(data, sourceText = "") {
         }
 
         if (resData.url) {
-          exportBtn.textContent = "Playlist Created! (Click to Open)";
+          exportBtn.textContent = tr("exportCreated");
           exportBtn.style.opacity = "1";
           exportBtn.onclick = () => window.open(resData.url, "_blank");
           exportBtn.disabled = false;
-          setStatus("Berhasil! Playlist telah disimpan ke akun Spotify kamu.", false);
+          setStatus(tr("exportSuccessStatus"), false);
         } else {
-          throw new Error(resData.error || "Gagal membuat playlist");
+          throw new Error(resData.error || tr("genericFailedPlaylist"));
         }
       } catch (err) {
-        exportBtn.textContent = "Error. Try Again";
+        exportBtn.textContent = tr("exportErrorTryAgain");
         exportBtn.disabled = false;
         exportBtn.style.opacity = "1";
         exportBtn.style.backgroundColor = "#ff8f8f"; // error red
-        setStatus(`Gagal export playlist: ${err.message}`, true);
+        setStatus(tr("exportFailed", { error: err.message }), true);
       }
     });
 
@@ -734,10 +1138,12 @@ function renderRecommendations(data, sourceText = "") {
 }
 
 function renderLoadingSkeleton(targetCount) {
+  lastRenderedData = null;
+  lastRenderedSourceText = "";
   clearCurrentPreviewState();
   const count = Math.max(4, Math.min(Number(targetCount) || 6, 8));
   recommendationList.innerHTML = "";
-  resultLead.textContent = "Sedang menyiapkan daftar lagu paling cocok...";
+  resultLead.textContent = tr("loadingLead");
 
   for (let i = 0; i < count; i += 1) {
     const card = document.createElement("article");
@@ -765,12 +1171,12 @@ async function requestRecommendations(event) {
   const targetCount = Number(targetCountInput.value || 15);
 
   if (!text) {
-    setStatus("Intent wajib diisi.", true);
+    setStatus(tr("intentRequired"), true);
     return;
   }
 
   submitBtn.disabled = true;
-  setStatus("Mencari rekomendasi terbaik untuk kamu...");
+  setStatus(tr("searching"));
   startAgentAnimation();
   renderLoadingSkeleton(targetCount);
 
@@ -795,13 +1201,13 @@ async function requestRecommendations(event) {
     const rankerMode = quality.llm_ranker_used ? "LLM" : "heuristic";
 
     setStatus(
-      `${data.summary.returned_count} lagu ditemukan. Profiler=${profilerMode}, Ranker=${rankerMode}.`
+      tr("foundStatus", { count: data.summary.returned_count, profilerMode, rankerMode })
     );
     stopAgentAnimation(true, data.quality_notes?.stage_ms || null);
   } catch (error) {
-    setStatus(error.message || "Terjadi error saat memanggil API.", true);
-    recommendationList.innerHTML = "<p class=\"empty-state\">Gagal memuat rekomendasi. Coba lagi sebentar.</p>";
-    resultLead.textContent = "Terjadi kendala saat mengambil rekomendasi.";
+    setStatus(error.message || tr("requestErrorDefault"), true);
+    recommendationList.innerHTML = `<p class=\"empty-state\">${tr("loadError")}</p>`;
+    resultLead.textContent = tr("loadErrorLead");
     stopAgentAnimation(false);
   } finally {
     submitBtn.disabled = false;
@@ -809,7 +1215,7 @@ async function requestRecommendations(event) {
 }
 
 async function checkLlmHealth(showStatusMessage = false) {
-  setLlmBadge("LLM: checking...", "neutral");
+  setLlmBadge(tr("llmChecking"), "neutral");
 
   try {
     const response = await fetch("/llm/health");
@@ -820,33 +1226,33 @@ async function checkLlmHealth(showStatusMessage = false) {
     const model = data.model || "unknown-model";
 
     if (data.ok) {
-      setLlmBadge(`LLM: online (${model})`, "ok");
+      setLlmBadge(tr("llmOnline", { model }), "ok");
       if (showStatusMessage) {
-        setStatus(`LLM ready on model ${model}.`);
+        setStatus(tr("llmReadyStatus", { model }));
       }
       return;
     }
 
     const isDisabled = data.status === "disabled";
     setLlmBadge(
-      isDisabled ? "LLM: disabled (fallback active)" : "LLM: degraded",
+      isDisabled ? tr("llmDisabled") : tr("llmDegraded"),
       isDisabled ? "warn" : "error"
     );
 
     if (showStatusMessage) {
-      setStatus(`LLM status: ${data.status}. ${data.details || ""}`.trim(), !isDisabled);
+      setStatus(tr("llmStatus", { status: data.status, details: data.details || "" }).trim(), !isDisabled);
     }
   } catch (error) {
-    setLlmBadge("LLM: unreachable", "error");
+    setLlmBadge(tr("llmUnreachable"), "error");
     if (showStatusMessage) {
-      setStatus(error.message || "Gagal cek LLM health.", true);
+      setStatus(error.message || tr("llmHealthError"), true);
     }
   }
 }
 
 async function checkSpotifyHealth() {
   healthBtn.disabled = true;
-  setStatus("Checking Spotify health...");
+  setStatus(tr("spotifyCheckingStatus"));
 
   try {
     const response = await fetch("/spotify/health");
@@ -856,34 +1262,48 @@ async function checkSpotifyHealth() {
     const data = await response.json();
     const detail = data.details ? ` ${data.details}` : "";
     if (data.ok) {
-      setSpotifyBadge("Spotify: online", "ok");
+      setSpotifyBadge(tr("spotifyOnline"), "ok");
     } else if (data.status === "mock-mode") {
-      setSpotifyBadge("Spotify: mock mode", "warn");
+      setSpotifyBadge(tr("spotifyMock"), "warn");
     } else {
-      setSpotifyBadge("Spotify: degraded", "error");
+      setSpotifyBadge(tr("spotifyDegraded"), "error");
     }
-    setStatus(`Spotify: ${data.status}.${detail}`);
+    setStatus(tr("spotifyStatus", { status: data.status, detail }));
   } catch (error) {
-    setSpotifyBadge("Spotify: unreachable", "error");
-    setStatus(error.message || "Gagal cek Spotify health.", true);
+    setSpotifyBadge(tr("spotifyUnreachable"), "error");
+    setStatus(error.message || tr("spotifyHealthError"), true);
   } finally {
     healthBtn.disabled = false;
   }
 }
 
 function bindQuickPrompts() {
+  if (!quickPrompts) {
+    return;
+  }
+
   quickPrompts.addEventListener("click", (event) => {
     const target = event.target;
-    if (!(target instanceof HTMLButtonElement)) {
+    if (!(target instanceof HTMLElement)) {
       return;
     }
-    const intent = target.dataset.intent;
+
+    const button = target.closest("button");
+    if (!(button instanceof HTMLButtonElement)) {
+      return;
+    }
+
+    const fallbackIntent = button.dataset.intent;
+    const intent = currentLang === "id"
+      ? (button.dataset.intentId || fallbackIntent)
+      : (button.dataset.intentEn || fallbackIntent || button.dataset.intentId);
+
     if (!intent) {
       return;
     }
     intentInput.value = intent;
     intentInput.focus();
-    setStatus("Contoh intent terisi. Kamu bisa langsung cari rekomendasi.");
+    setStatus(tr("promptFilled"));
   });
 }
 
@@ -893,11 +1313,11 @@ function handleOAuthToken() {
   if (token) {
     localStorage.setItem("spotify_token", token);
     window.history.replaceState({}, document.title, window.location.pathname);
-    setStatus("Berhasil login! Akun Spotify siap digunakan untuk menyimpan playlist.");
+    setStatus(tr("oauthSuccess"));
   }
   
   if (localStorage.getItem("spotify_token") && spotifyLoginBtn) {
-    spotifyLoginBtn.textContent = "Spotify Connected ✓";
+    spotifyLoginBtn.textContent = tr("spotifyConnected");
     spotifyLoginBtn.style.backgroundColor = "transparent";
     spotifyLoginBtn.style.border = "1px solid #1DB954";
     spotifyLoginBtn.style.color = "#1DB954";
@@ -913,6 +1333,9 @@ if (spotifyLoginBtn) {
 
 form.addEventListener("submit", requestRecommendations);
 healthBtn.addEventListener("click", checkSpotifyHealth);
+bindLanguageSwitch();
+bindTrackDetailModal();
+applyLanguageUI();
 bindQuickPrompts();
 bindRuntimePreferences();
 bindPipelineGeometrySync();
@@ -920,5 +1343,5 @@ startRuntimeFrameLoop();
 checkLlmHealth();
 checkSpotifyHealth();
 handleOAuthToken();
-setAgentStage(0, "Idle • Menunggu perintah");
-setAgentMetrics("Milestone backend akan tampil setelah request selesai.");
+setAgentStage(0, tr("stageIdle"));
+setAgentMetrics(tr("metricsDefault"));
