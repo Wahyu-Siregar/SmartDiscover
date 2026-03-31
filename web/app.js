@@ -1054,9 +1054,6 @@ function renderRecommendations(data, sourceText = "") {
     exportBtn.className = "shimmer-btn";
     exportBtn.classList.add("export-action-btn");
 
-    exportBtn.onmouseover = () => { exportBtn.style.transform = "scale(1.05)"; };
-    exportBtn.onmouseout = () => { exportBtn.style.transform = "scale(1)"; };
-
     const hasToken = !!localStorage.getItem("spotify_token");
     exportBtn.textContent = hasToken ? tr("exportSave") : tr("exportLogin");
 
@@ -1178,6 +1175,11 @@ async function requestRecommendations(event) {
   if (!text) {
     setStatus(tr("intentRequired"), true);
     return;
+  }
+
+  // Prevent mobile browsers (notably iOS Safari) from staying in auto-zoom input mode.
+  if (document.activeElement instanceof HTMLElement) {
+    document.activeElement.blur();
   }
 
   submitBtn.disabled = true;

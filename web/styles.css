@@ -274,7 +274,6 @@ body {
   border-left: 3px solid var(--brand-primary);
   padding-left: 9px;
 }
-}
 
 .row-group { flex-direction: column; justify-content: flex-start; align-items: stretch; gap: 8px; }
 .row-group > div { display: flex; flex-direction: column; gap: 8px; }
@@ -720,8 +719,6 @@ body {
   padding: 18px;
   overflow: hidden;
   box-shadow: 0 14px 28px -18px rgba(0, 0, 0, 0.92);
-  content-visibility: auto;
-  contain-intrinsic-size: 320px;
 }
 .track-card {
   display: flex;
@@ -1196,7 +1193,8 @@ body.modal-open {
   .input-group textarea,
   .input-group input {
     padding: 9px;
-    font-size: 0.84rem;
+    font-size: 16px;
+    line-height: 1.35;
   }
 
   .input-group textarea {
@@ -1360,6 +1358,12 @@ body.modal-open {
   .magic-card {
     padding: 14px;
     border-radius: 14px;
+  }
+
+  /* Avoid mobile compositor glitches when new cards are inserted. */
+  .export-action-bar {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
 
   .track-card {
@@ -1613,7 +1617,8 @@ body.modal-open {
 
   .input-group textarea,
   .input-group input {
-    font-size: 0.8rem;
+    font-size: 16px;
+    line-height: 1.35;
     padding: 8px;
   }
 
