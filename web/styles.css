@@ -173,6 +173,13 @@ body {
 .control-form { display: flex; flex-direction: column; gap: 12px; }
 .input-group { display: flex; flex-direction: column; gap: 6px; }
 .input-group label { font-size: 0.85rem; color: var(--text-secondary); font-weight: 500; }
+
+.textarea-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
 .input-group textarea, .input-group input {
   background: rgba(0,0,0,0.5);
   border: 1px solid var(--border-color);
@@ -182,12 +189,72 @@ body {
   font-family: inherit;
   font-size: 0.9rem;
   resize: vertical;
-  transition: border-color 0.2s;
+  transition: all 0.2s ease;
 }
+
+.textarea-wrapper textarea {
+  border-bottom-left-radius: 10px;
+  border-bottom-right-radius: 10px;
+}
+
+.textarea-wrapper textarea:focus ~ .prompt-suggestions-dropdown,
+.prompt-suggestions-dropdown:hover {
+  display: block;
+}
+
 .input-group input { min-height: var(--touch-target-min); }
 .input-group textarea:focus, .input-group input:focus {
   outline: none;
   border-color: var(--brand-primary);
+  background: rgba(0,0,0,0.7);
+  box-shadow: 0 0 0 3px rgba(55, 207, 134, 0.1);
+}
+
+.prompt-suggestions-dropdown {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: rgba(10, 15, 23, 0.95);
+  border: 1px solid var(--border-color);
+  border-top: 1px solid rgba(55, 207, 134, 0.3);
+  border-bottom-left-radius: 10px;
+  border-bottom-right-radius: 10px;
+  max-height: 240px;
+  overflow-y: auto;
+  z-index: 1000;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  animation: slideDown 0.15s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.prompt-suggestions-dropdown::-webkit-scrollbar {
+  width: 6px;
+}
+
+.prompt-suggestions-dropdown::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.prompt-suggestions-dropdown::-webkit-scrollbar-thumb {
+  background: rgba(55, 207, 134, 0.3);
+  border-radius: 3px;
+}
+
+.prompt-suggestions-dropdown::-webkit-scrollbar-thumb:hover {
+  background: rgba(55, 207, 134, 0.6);
+}
 }
 
 .row-group { flex-direction: column; justify-content: flex-start; align-items: stretch; gap: 8px; }

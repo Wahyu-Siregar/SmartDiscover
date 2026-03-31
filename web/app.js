@@ -1330,6 +1330,107 @@ function handleOAuthToken() {
   }
 }
 
+// ========================================
+// Prompt History Autocomplete
+// ========================================
+let promptSuggestionsDebounceTimer = null;
+
+async function fetchPromptSuggestions(query) {
+  try {
+    const response = await fetch(`/api/prompt-suggestions?q=${encodeURIComponent(query)}`);
+    if (!response.ok) return [];
+    const data = await response.json();
+    return data.suggestions || [];
+  } catch (e) {
+    console.warn("Failed to fetch prompt suggestions:", e);
+    return [];
+  }
+}
+
+function updatePromptDatalist(suggestions) {
+  const dropdown = document.getElementById("promptSuggestions");
+  if (!dropdown) return;
+  
+  if (!suggestions || suggestions.length === 0) {
+    dropdown.style.display = "none";
+    dropdown.innerHTML = "";
+    return;
+  }
+  
+  dropdown.innerHTML = "";
+  suggestions.forEach((suggestion, index) => {
+    const item = document.createElement("div");
+    item.style.cssText = `
+      padding: 11px 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      cursor: pointer;
+      font-size: 0.9rem;
+      color: var(--text-primary);
+      transition: all 0.12s ease;
+      background: transparent;
+      position: relative;
+      overflow: hidden;
+    `;
+    
+    // Add pseudo-element hover effect
+    item.innerHTML = suggestion;
+    
+    item.onmouseenter = () => {
+      item.style.background = "rgba(55, 207, 134, 0.08)";
+      item.style.color = "var(--brand-primary)";
+      item.style.borderLeftColor = "var(--brand-primary)";
+      item.style.borderLeft = "3px solid var(--brand-primary)";
+      item.style.paddingLeft = "9px";
+    };
+    
+    item.onmouseleave = () => {
+      item.style.background = "transparent";
+      item.style.color = "var(--text-primary)";
+      item.style.borderLeft = "none";
+      item.style.paddingLeft = "12px";
+    };
+    
+    item.addEventListener("click", () => {
+      intentInput.value = suggestion;
+      dropdown.style.display = "none";
+    });
+    
+    dropdown.appendChild(item);
+  });
+  
+  dropdown.style.display = "block";
+}
+
+function handlePromptInput(event) {
+  const query = event.target.value.trim();
+  
+  // Clear previous debounce timer
+  if (promptSuggestionsDebounceTimer) {
+    clearTimeout(promptSuggestionsDebounceTimer);
+  }
+
+  // If input is empty or just whitespace, clear suggestions
+  if (!query) {
+    updatePromptDatalist([]);
+    return;
+  }
+
+  // Debounce fetch: wait 300ms after user stops typing
+  promptSuggestionsDebounceTimer = setTimeout(async () => {
+    const suggestions = await fetchPromptSuggestions(query);
+    updatePromptDatalist(suggestions);
+  }, 300);
+}
+
+// Close dropdown when clicking outside
+document.addEventListener("click", (e) => {
+  const dropdown = document.getElementById("promptSuggestions");
+  const textarea = document.getElementById("intentInput");
+  if (dropdown && !dropdown.contains(e.target) && !textarea.contains(e.target)) {
+    dropdown.style.display = "none";
+  }
+});
+
 if (spotifyLoginBtn) {
   spotifyLoginBtn.addEventListener("click", () => {
     window.location.href = "/auth/login";
@@ -1337,6 +1438,9 @@ if (spotifyLoginBtn) {
 }
 
 form.addEventListener("submit", requestRecommendations);
+if (intentInput) {
+  intentInput.addEventListener("input", handlePromptInput);
+}
 healthBtn.addEventListener("click", checkSpotifyHealth);
 bindLanguageSwitch();
 bindTrackDetailModal();

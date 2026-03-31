@@ -56,6 +56,45 @@ async def llm_health() -> dict:
     return {"service": "openrouter", "model": pipeline.llm.model, **status}
 
 
+@app.get("/api/prompt-suggestions")
+async def get_prompt_suggestions(q: str = "") -> dict:
+    """Fetch distinct prompts from database matching query text for autocomplete."""
+    if not prompt_store.enabled:
+        return {"suggestions": []}
+
+    try:
+        from urllib.parse import quote
+        endpoint = f"{prompt_store._url}/rest/v1/{prompt_store._table}?select=prompt_text&order=created_at.desc&limit=15"
+        
+        # Add filter if query provided
+        if q and q.strip():
+            pattern = f"%{q.strip()}%"
+            endpoint += f"&prompt_text=ilike.{quote(pattern)}"
+        
+        headers = {
+            "apikey": prompt_store._api_key,
+            "Authorization": f"Bearer {prompt_store._api_key}",
+        }
+
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            response = await client.get(endpoint, headers=headers)
+            if response.status_code == 200:
+                data = response.json()
+                # Remove duplicates while preserving order
+                seen = set()
+                suggestions = []
+                for row in data:
+                    prompt = row.get("prompt_text", "").strip()
+                    if prompt and prompt not in seen:
+                        suggestions.append(prompt)
+                        seen.add(prompt)
+                return {"suggestions": suggestions[:15]}
+        return {"suggestions": []}
+    except Exception as exc:
+        logger.warning("Failed to fetch prompt suggestions: %s", exc)
+        return {"suggestions": []}
+
+
 @app.post("/recommend", response_model=RecommendResponse)
 async def recommend(payload: RecommendRequest, request: Request) -> RecommendResponse:
     response = await pipeline.run(payload)

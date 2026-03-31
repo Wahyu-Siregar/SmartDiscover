@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>SmartDiscover • Magic UI</title>
+    <title>SmartDiscover</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet" />
@@ -33,7 +33,10 @@
         <form id="recommendForm" class="control-form delay-1 fade-in">
           <div class="input-group">
             <label id="intentLabel" for="intentInput">Apa mood atau aktivitasmu?</label>
-            <textarea id="intentInput" rows="2" placeholder="contoh: lagu sedih pas nge-bug jam 2 pagi..." required></textarea>
+            <div class="textarea-wrapper">
+              <textarea id="intentInput" rows="2" placeholder="contoh: lagu sedih pas nge-bug jam 2 pagi..." required></textarea>
+              <div id="promptSuggestions" class="prompt-suggestions-dropdown"></div>
+            </div>
           </div>
 
           <div class="quick-prompts fade-in delay-2" id="quickPrompts">
