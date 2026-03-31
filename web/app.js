@@ -1331,19 +1331,43 @@ function handleOAuthToken() {
 }
 
 // ========================================
-// Prompt History Autocomplete
+// Prompt History Autocomplete (Ultra Fast)
 // ========================================
 let promptSuggestionsDebounceTimer = null;
+let promptSuggestionsCache = new Map(); // Cache results
+let allPromptSuggestions = []; // Preloaded recent prompts
 
 async function fetchPromptSuggestions(query) {
+  // Check cache first
+  if (promptSuggestionsCache.has(query)) {
+    return promptSuggestionsCache.get(query);
+  }
+
   try {
     const response = await fetch(`/api/prompt-suggestions?q=${encodeURIComponent(query)}`);
     if (!response.ok) return [];
     const data = await response.json();
-    return data.suggestions || [];
+    const suggestions = data.suggestions || [];
+    
+    // Cache the result
+    promptSuggestionsCache.set(query, suggestions);
+    return suggestions;
   } catch (e) {
     console.warn("Failed to fetch prompt suggestions:", e);
     return [];
+  }
+}
+
+async function preloadRecentPrompts() {
+  // Load all recent prompts once when app starts
+  try {
+    const response = await fetch(`/api/prompt-suggestions`);
+    if (!response.ok) return;
+    const data = await response.json();
+    allPromptSuggestions = data.suggestions || [];
+    promptSuggestionsCache.set("", allPromptSuggestions); // Cache empty query
+  } catch (e) {
+    console.warn("Failed to preload recent prompts:", e);
   }
 }
 
@@ -1356,50 +1380,50 @@ function updatePromptDatalist(suggestions) {
     dropdown.innerHTML = "";
     return;
   }
+
+  // Use DocumentFragment for faster DOM insertion
+  const fragment = document.createDocumentFragment();
   
-  dropdown.innerHTML = "";
-  suggestions.forEach((suggestion, index) => {
+  suggestions.forEach((suggestion) => {
     const item = document.createElement("div");
-    item.style.cssText = `
-      padding: 11px 12px;
-      border-bottom: 1px solid rgba(255,255,255,0.04);
-      cursor: pointer;
-      font-size: 0.9rem;
-      color: var(--text-primary);
-      transition: all 0.12s ease;
-      background: transparent;
-      position: relative;
-      overflow: hidden;
-    `;
-    
-    // Add pseudo-element hover effect
-    item.innerHTML = suggestion;
-    
-    item.onmouseenter = () => {
-      item.style.background = "rgba(55, 207, 134, 0.08)";
-      item.style.color = "var(--brand-primary)";
-      item.style.borderLeftColor = "var(--brand-primary)";
-      item.style.borderLeft = "3px solid var(--brand-primary)";
-      item.style.paddingLeft = "9px";
-    };
-    
-    item.onmouseleave = () => {
-      item.style.background = "transparent";
-      item.style.color = "var(--text-primary)";
-      item.style.borderLeft = "none";
-      item.style.paddingLeft = "12px";
-    };
-    
-    item.addEventListener("click", () => {
-      intentInput.value = suggestion;
-      dropdown.style.display = "none";
-    });
-    
-    dropdown.appendChild(item);
+    item.className = "prompt-suggestion-item";
+    item.textContent = suggestion;
+    item.dataset.prompt = suggestion;
+    fragment.appendChild(item);
   });
   
+  dropdown.innerHTML = "";
+  dropdown.appendChild(fragment);
   dropdown.style.display = "block";
 }
+
+// Event delegation for suggestion clicks
+document.addEventListener("click", (e) => {
+  const item = e.target.closest(".prompt-suggestion-item");
+  if (item && document.getElementById("intentInput")) {
+    intentInput.value = item.dataset.prompt;
+    document.getElementById("promptSuggestions").style.display = "none";
+  }
+});
+
+// Event delegation for hover effects
+document.addEventListener("mouseover", (e) => {
+  const item = e.target.closest(".prompt-suggestion-item");
+  if (item) {
+    item.classList.add("hover");
+    // Remove hover from siblings
+    item.parentElement?.querySelectorAll(".prompt-suggestion-item").forEach(el => {
+      if (el !== item) el.classList.remove("hover");
+    });
+  }
+});
+
+document.addEventListener("mouseout", (e) => {
+  const item = e.target.closest(".prompt-suggestion-item");
+  if (item && !e.relatedTarget?.closest(".prompt-suggestion-item")) {
+    item.classList.remove("hover");
+  }
+});
 
 function handlePromptInput(event) {
   const query = event.target.value.trim();
@@ -1409,27 +1433,42 @@ function handlePromptInput(event) {
     clearTimeout(promptSuggestionsDebounceTimer);
   }
 
-  // If input is empty or just whitespace, clear suggestions
+  // If input is empty, show preloaded recent prompts instantly
   if (!query) {
-    updatePromptDatalist([]);
+    updatePromptDatalist(allPromptSuggestions);
     return;
   }
 
-  // Debounce fetch: wait 300ms after user stops typing
+  // Debounce fetch: wait 100ms after user stops typing (reduced from 300ms)
   promptSuggestionsDebounceTimer = setTimeout(async () => {
     const suggestions = await fetchPromptSuggestions(query);
     updatePromptDatalist(suggestions);
-  }, 300);
+  }, 100);
 }
 
 // Close dropdown when clicking outside
 document.addEventListener("click", (e) => {
   const dropdown = document.getElementById("promptSuggestions");
   const textarea = document.getElementById("intentInput");
-  if (dropdown && !dropdown.contains(e.target) && !textarea.contains(e.target)) {
+  if (dropdown && !dropdown.contains(e.target) && !textarea?.contains(e.target)) {
     dropdown.style.display = "none";
   }
 });
+
+// Preload recent prompts on textarea focus
+if (intentInput) {
+  intentInput.addEventListener("focus", async () => {
+    if (allPromptSuggestions.length === 0) {
+      await preloadRecentPrompts();
+      updatePromptDatalist(allPromptSuggestions);
+    } else {
+      // Show preloaded suggestions if textarea is empty
+      if (!intentInput.value.trim()) {
+        updatePromptDatalist(allPromptSuggestions);
+      }
+    }
+  });
+}
 
 if (spotifyLoginBtn) {
   spotifyLoginBtn.addEventListener("click", () => {
