@@ -3,19 +3,73 @@ import re
 from typing import Any
 
 import httpx
+from tenacity import AsyncRetrying, RetryError, retry_if_exception_type, stop_after_attempt, wait_exponential_jitter
 
 from app.config import settings
 
 
+_RETRYABLE_STATUSES = {429, 500, 502, 503, 504}
+
+
+class _RetryableHTTPError(Exception):
+    """Internal marker so tenacity retries 429/5xx without retrying 4xx."""
+
+
+def _summarize(result: Any, max_len: int = 240) -> str:
+    """Compact, log-friendly representation of a tool result."""
+    try:
+        if isinstance(result, dict):
+            keys = list(result.keys())[:6]
+            return f"dict(keys={keys}, len={len(result)})"
+        if isinstance(result, list):
+            return f"list(len={len(result)})"
+        text = str(result)
+        return text if len(text) <= max_len else text[: max_len - 3] + "..."
+    except Exception:
+        return "<unrepr>"
+
+
 class OpenRouterClient:
-    def __init__(self) -> None:
+    def __init__(self, client: httpx.AsyncClient | None = None) -> None:
         self.base_url = settings.openrouter_base_url.rstrip("/")
         self.model = settings.openrouter_model
         self.api_key = settings.openrouter_api_key
+        self._client = client
+
+    def attach_client(self, client: httpx.AsyncClient) -> None:
+        self._client = client
 
     @property
     def enabled(self) -> bool:
         return bool(self.api_key)
+
+    async def _post_chat(self, payload: dict[str, Any], timeout: float) -> httpx.Response:
+        assert self._client is not None, "OpenRouterClient.attach_client() must be called before use"
+        resp = await self._client.post(
+            f"{self.base_url}/chat/completions",
+            headers=self._headers(),
+            json=payload,
+            timeout=timeout,
+        )
+        if resp.status_code in _RETRYABLE_STATUSES:
+            raise _RetryableHTTPError(f"OpenRouter status {resp.status_code}")
+        return resp
+
+    async def _post_chat_with_retry(self, payload: dict[str, Any], timeout: float) -> httpx.Response | None:
+        try:
+            async for attempt in AsyncRetrying(
+                stop=stop_after_attempt(3),
+                wait=wait_exponential_jitter(initial=0.4, max=2.0),
+                retry=retry_if_exception_type((_RetryableHTTPError, httpx.TransportError, httpx.TimeoutException)),
+                reraise=False,
+            ):
+                with attempt:
+                    return await self._post_chat(payload, timeout)
+        except RetryError:
+            return None
+        except Exception:
+            return None
+        return None
 
     async def health_check(self) -> dict[str, Any]:
         if not self.enabled:
@@ -35,17 +89,13 @@ class OpenRouterClient:
                 "max_tokens": 8,
                 "temperature": 0,
             }
-            async with httpx.AsyncClient(timeout=30.0) as client:
-                resp = await client.post(
-                    f"{self.base_url}/chat/completions",
-                    headers=self._headers(),
-                    json=payload,
-                )
-            if resp.status_code != 200:
+            resp = await self._post_chat_with_retry(payload, timeout=30.0)
+            if resp is None or resp.status_code != 200:
+                code = resp.status_code if resp is not None else "n/a"
                 return {
                     "status": "openrouter-error",
                     "ok": False,
-                    "details": f"OpenRouter returned {resp.status_code}",
+                    "details": f"OpenRouter returned {code}",
                 }
             return {
                 "status": "ok",
@@ -59,30 +109,35 @@ class OpenRouterClient:
                 "details": str(exc),
             }
 
-    async def chat_json(self, system_prompt: str, user_prompt: str, max_tokens: int = 700) -> dict[str, Any] | None:
+    async def chat_json(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        max_tokens: int = 700,
+        *,
+        temperature: float = 0.2,
+        json_mode: bool = True,
+    ) -> dict[str, Any] | None:
         if not self.enabled:
             return None
 
-        payload = {
+        payload: dict[str, Any] = {
             "model": self.model,
             "messages": [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
             ],
-            "temperature": 0.2,
+            "temperature": temperature,
             "max_tokens": max_tokens,
         }
+        if json_mode:
+            payload["response_format"] = {"type": "json_object"}
+
+        resp = await self._post_chat_with_retry(payload, timeout=45.0)
+        if resp is None or resp.status_code != 200:
+            return None
 
         try:
-            async with httpx.AsyncClient(timeout=45.0) as client:
-                resp = await client.post(
-                    f"{self.base_url}/chat/completions",
-                    headers=self._headers(),
-                    json=payload,
-                )
-            if resp.status_code != 200:
-                return None
-
             body = resp.json()
             content = (
                 body.get("choices", [{}])[0]
@@ -93,11 +148,92 @@ class OpenRouterClient:
         except Exception:
             return None
 
+    async def chat_with_tools(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        tools: list[dict[str, Any]],
+        tool_executor,  # async (name: str, arguments: dict) -> Any
+        *,
+        max_iterations: int = 3,
+        max_tokens: int = 1000,
+        temperature: float = 0.2,
+    ) -> dict[str, Any] | None:
+        """Tool-calling loop. `tool_executor` runs each tool call and returns a JSON-serializable result.
+
+        Returns the final assistant message dict plus a `trace` of tool calls, or None on failure.
+        """
+        if not self.enabled:
+            return None
+
+        messages: list[dict[str, Any]] = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ]
+        trace: list[dict[str, Any]] = []
+
+        for iteration in range(max_iterations):
+            payload = {
+                "model": self.model,
+                "messages": messages,
+                "tools": tools,
+                "tool_choice": "auto",
+                "temperature": temperature,
+                "max_tokens": max_tokens,
+            }
+            resp = await self._post_chat_with_retry(payload, timeout=60.0)
+            if resp is None or resp.status_code != 200:
+                return None
+
+            try:
+                body = resp.json()
+                msg = body.get("choices", [{}])[0].get("message", {}) or {}
+            except Exception:
+                return None
+
+            tool_calls = msg.get("tool_calls") or []
+            # Append assistant message (must include tool_calls if any).
+            assistant_entry: dict[str, Any] = {"role": "assistant", "content": msg.get("content") or ""}
+            if tool_calls:
+                assistant_entry["tool_calls"] = tool_calls
+            messages.append(assistant_entry)
+
+            if not tool_calls:
+                # Model decided to stop or no tools requested.
+                return {"message": msg, "trace": trace, "iterations": iteration + 1}
+
+            # Execute tools and append tool results.
+            import json as _json
+            for call in tool_calls:
+                fn = call.get("function", {}) or {}
+                name = fn.get("name", "")
+                args_raw = fn.get("arguments", "{}") or "{}"
+                try:
+                    arguments = _json.loads(args_raw) if isinstance(args_raw, str) else dict(args_raw)
+                except Exception:
+                    arguments = {}
+                try:
+                    result = await tool_executor(name, arguments)
+                except Exception as exc:
+                    result = {"error": str(exc)}
+                trace.append({"name": name, "arguments": arguments, "result_summary": _summarize(result)})
+                messages.append(
+                    {
+                        "role": "tool",
+                        "tool_call_id": call.get("id", ""),
+                        "name": name,
+                        "content": _json.dumps(result, default=str)[:4000],
+                    }
+                )
+
+        # Iteration cap reached.
+        return {"message": messages[-1] if messages else {}, "trace": trace, "iterations": max_iterations}
+
     def _headers(self) -> dict[str, str]:
         return {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
-            "HTTP-Referer": "http://localhost:8000",
+            "HTTP-Referer": settings.app_public_url,
             "X-Title": "SmartDiscover",
         }
 

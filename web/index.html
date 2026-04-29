@@ -3,224 +3,253 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>SmartDiscover</title>
+    <title>SmartDiscover — Multi-Agent Music Curation</title>
+    <link rel="icon" type="image/svg+xml" href="/static/assets/logo.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/static/styles.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,300..700,0..100,0..1;1,9..144,300..700,0..100,0..1&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/static/css/index.css" />
   </head>
-  <body class="dark-theme">
-    <!-- Magic UI Backgrounds -->
-    <div class="retro-grid-container" aria-hidden="true">
-      <div class="retro-grid"></div>
-      <div class="retro-gradient"></div>
-    </div>
-
-    <!-- Main Layout: Bento Grid -->
-    <div class="bento-layout">
-      <!-- LEFT COLUMN -->
-      <aside class="bento-sidebar glass-panel">
-        <header class="hero">
-          <h1 class="gradient-title">SmartDiscover</h1>
-          <p id="subtitleText" class="subtitle">AI-Driven Spotify Curation in a single prompt.</p>
-          <div class="lang-switch fade-in" id="langSwitch" role="group" aria-label="Language switch">
+  <body>
+    <div class="app-shell">
+      <!-- Ribbon -->
+      <header class="ribbon">
+        <div class="ribbon__brand">
+          <img src="/static/assets/logo.svg" alt="" aria-hidden="true" />
+          <span>SmartDiscover</span>
+        </div>
+        <span class="ribbon__issue" id="ribbonIssue">Vol. 02 · Multi-Agent Music Issue</span>
+        <span class="ribbon__spacer"></span>
+        <div class="ribbon__cluster">
+          <div class="lang-switch" id="langSwitch" role="group" aria-label="Language">
             <button id="langIdBtn" class="lang-btn is-active" type="button" aria-pressed="true">ID</button>
             <button id="langEnBtn" class="lang-btn" type="button" aria-pressed="false">EN</button>
           </div>
-        </header>
+          <button id="spotifyLoginBtn" class="btn btn--spotify" type="button">Connect Spotify</button>
+          <button id="healthBtn" class="btn btn--ghost" type="button">Check Health</button>
+        </div>
+      </header>
 
-        <form id="recommendForm" class="control-form delay-1 fade-in">
-          <div class="input-group">
-            <label id="intentLabel" for="intentInput">Apa mood atau aktivitasmu?</label>
+      <!-- Hero -->
+      <section class="hero" aria-labelledby="heroTitle">
+        <div class="hero__masthead">
+          <div>
+            <p class="hero__kicker" id="heroKicker">Editorial Issue · Spotify Curation</p>
+            <h1 id="heroTitle" class="hero__title">
+              Music, <em>curated</em> by four agents.
+            </h1>
+            <p class="hero__sub" id="subtitleText">
+              AI-Driven Spotify curation in a single prompt — profile, search, rank, present.
+            </p>
+          </div>
+          <div class="cluster hero__health" aria-label="System health">
+            <span id="llmBadge" class="health-badge neutral">LLM: checking...</span>
+            <span id="spotifyBadge" class="health-badge neutral">Spotify: checking...</span>
+          </div>
+        </div>
+
+        <form id="recommendForm" class="hero__form">
+          <div class="field">
+            <label class="field__label" for="intentInput" id="intentLabel">Apa mood atau aktivitasmu?</label>
             <div class="textarea-wrapper">
-              <textarea id="intentInput" rows="2" placeholder="contoh: lagu sedih pas nge-bug jam 2 pagi..." required></textarea>
-              <div id="promptSuggestions" class="prompt-suggestions-dropdown"></div>
+              <textarea id="intentInput" class="textarea" rows="3" placeholder="contoh: lagu sedih pas nge-bug jam 2 pagi..." required></textarea>
+              <div id="promptSuggestions" class="prompt-suggestions-dropdown" role="listbox"></div>
             </div>
           </div>
 
-          <div class="quick-prompts fade-in delay-2" id="quickPrompts">
-            <p id="quickPromptLabel" class="label">Coba Prompt Bebas:</p>
-            <div class="chips">
-              <button id="chipFocus" class="chip-btn" type="button" data-intent="lagu fokus buat kerja malam hari" data-intent-id="lagu fokus buat kerja malam hari" data-intent-en="focus songs for late night work">Fokus Kerja</button>
-              <button id="chipRain" class="chip-btn" type="button" data-intent="jalanan hujan malam sendirian" data-intent-id="jalanan hujan malam sendirian" data-intent-en="rainy midnight drive alone">Hujan Malam</button>
-              <button id="chipWorkout" class="chip-btn" type="button" data-intent="workout keras angkat beban" data-intent-id="workout keras angkat beban" data-intent-en="high energy gym workout mix">Workout</button>
+          <div class="field">
+            <span class="field__label" id="quickPromptLabel">Coba Prompt Bebas</span>
+            <div class="chip-row" id="quickPrompts">
+              <button id="chipFocus" class="chip" type="button" data-intent-id="lagu fokus buat kerja malam hari" data-intent-en="focus songs for late night work">Fokus Kerja</button>
+              <button id="chipRain" class="chip" type="button" data-intent-id="jalanan hujan malam sendirian" data-intent-en="rainy midnight drive alone">Hujan Malam</button>
+              <button id="chipWorkout" class="chip" type="button" data-intent-id="workout keras angkat beban" data-intent-en="high energy gym workout mix">Workout</button>
             </div>
           </div>
-          
-          <div class="input-group row-group">
-             <div>
-               <label id="targetCountLabel" for="targetCountInput">Berapa Lagu?</label>
-               <input id="targetCountInput" type="number" inputmode="numeric" min="5" max="50" value="15" />
-             </div>
-             
-             <div class="badges-stacked">
-                <span id="llmBadge" class="health-badge neutral">LLM: checking...</span>
-                <span id="spotifyBadge" class="health-badge neutral">Spotify: checking...</span>
-             </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label class="field__label" for="targetCountInput" id="targetCountLabel">Berapa Lagu?</label>
+              <input id="targetCountInput" class="input input--small" type="number" inputmode="numeric" min="5" max="50" value="15" />
+            </div>
+            <button id="submitBtn" class="btn btn--primary btn--block" type="submit">
+              <span id="submitText">Mulai Kurasi</span>
+            </button>
           </div>
 
-          <p id="statusText" class="status-msg" role="status" aria-live="polite">Siap menerima perintah.</p>
-
-          <!-- Magic Shimmer Button -->
-          <button id="submitBtn" class="shimmer-btn" type="submit">
-            <span id="submitText" class="shimmer-text">Mulai Kurasi</span>
-          </button>
+          <p id="statusText" class="text-eyebrow" role="status" aria-live="polite">Siap menerima perintah.</p>
         </form>
 
-        <div class="system-actions fade-in delay-3">
-          <button id="spotifyLoginBtn" class="magic-btn-outline" type="button">Connect Spotify</button>
-          <button id="healthBtn" class="magic-btn-outline" type="button">Check Health</button>
-        </div>
-      </aside>
-
-      <!-- RIGHT COLUMN -->
-      <main class="bento-content">
-        <article class="insight-strip glass-panel fade-in delay-1" aria-label="Insight ringkas">
-          <div class="insight-tile">
-            <p id="insightEngineLabel" class="insight-label">Engine</p>
-            <p id="insightEngineValue" class="insight-value">Multi-Agent Music Graph</p>
-          </div>
-          <div class="insight-tile">
-            <p id="insightLatencyLabel" class="insight-label">Latency</p>
-            <p id="insightLatencyValue" class="insight-value">Adaptive Fast Path</p>
-          </div>
-          <div class="insight-tile">
-            <p id="insightOutputLabel" class="insight-label">Output</p>
-            <p id="insightOutputValue" class="insight-value">Ready-to-Play Picks</p>
-          </div>
-        </article>
-
-        <!-- Agent Pipeline Tracker -->
-        <article class="glass-panel pipeline-panel fade-in delay-2" id="agentFlow" data-stage="0">
-          <div class="pipeline-fx" aria-hidden="true">
-            <span class="pipeline-orbital"></span>
-            <span class="pipeline-border-beam"></span>
-            <span class="pipeline-border-beam is-reverse"></span>
-            <span class="pipeline-corner pipeline-corner-tl"></span>
-            <span class="pipeline-corner pipeline-corner-tr"></span>
-            <span class="pipeline-corner pipeline-corner-bl"></span>
-            <span class="pipeline-corner pipeline-corner-br"></span>
+        <aside class="hero__dossier" aria-label="Issue dossier">
+          <div class="dossier">
+            <div class="dossier__masthead">
+              <span class="dossier__title" id="dossierTitle">The Issue Brief</span>
+              <span class="dossier__issue" id="dossierIssue">№ 02</span>
+            </div>
+            <div class="dossier__row">
+              <span class="dossier__label" id="insightEngineLabel">Engine</span>
+              <span class="dossier__value" id="insightEngineValue">Multi-Agent Music Graph</span>
+            </div>
+            <div class="dossier__row">
+              <span class="dossier__label" id="insightLatencyLabel">Latency</span>
+              <span class="dossier__value dossier__value--mono" id="insightLatencyValue">Adaptive</span>
+            </div>
+            <div class="dossier__row">
+              <span class="dossier__label" id="insightOutputLabel">Output</span>
+              <span class="dossier__value" id="insightOutputValue">Ready-to-Play Picks</span>
+            </div>
+            <div class="dossier__row">
+              <span class="dossier__label">Mode</span>
+              <span class="dossier__value dossier__value--mono" id="dossierMode">Idle</span>
+            </div>
           </div>
 
-          <div class="pipeline-header">
-            <h3 id="pipelineTitle">Agent Neural Pipeline</h3>
-            <span id="agentStageText" class="stage-text">Idle • Menunggu perintah</span>
-          </div>
-          
-          <div class="track-container">
-             <div class="track-line"></div>
-             <div class="track-active"></div>
-             <!-- The Pixel Agent Sprite -->
-             <img id="agentPixel" src="/static/assets/runtime/idle-1.svg" alt="Mini agent" class="pixel-agent" />
-             
-             <!-- Steps -->
-             <div class="track-steps">
-               <div class="track-step" id="pillProfiler"><div class="dot"></div><span class="step-label">Profiler</span></div>
-               <div class="track-step" id="pillSearch"><div class="dot"></div><span class="step-label">Search</span></div>
-               <div class="track-step" id="pillRanker"><div class="dot"></div><span class="step-label">Ranker</span></div>
-               <div class="track-step" id="pillPresenter"><div class="dot"></div><span class="step-label">Presenter</span></div>
-             </div>
-          </div>
-          
-          <div class="pipeline-footer">
-            <p id="agentMetrics">Milestone backend akan tampil di sini.</p>
-          </div>
-        </article>
+          <!-- Pipeline visualization -->
+          <article class="pipeline" id="agentFlow" data-stage="0" role="status" aria-live="polite">
+            <div class="pipeline__header">
+              <h3 id="pipelineTitle" class="pipeline__title">Agent Neural Pipeline</h3>
+              <span id="agentStageText" class="pipeline__stage-text">Idle</span>
+            </div>
+            <div class="track-container">
+              <div class="track-line"></div>
+              <div class="track-active"></div>
+              <div id="agentPixel" class="agent-orb" data-stage="0" aria-hidden="true">
+                <svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+                  <!-- Aura backdrop -->
+                  <circle class="orb-aura" cx="30" cy="30" r="26" />
+                  <!-- Outer ring (dashed, rotates) -->
+                  <circle class="orb-ring" cx="30" cy="30" r="22" />
+                  <!-- Profiler scan line -->
+                  <g class="orb-scan">
+                    <line x1="6" y1="30" x2="54" y2="30" />
+                  </g>
+                  <!-- Search orbital satellites -->
+                  <g class="orb-orbit">
+                    <circle class="orb-sat" cx="30" cy="10" r="2" />
+                    <circle class="orb-sat" cx="47.32" cy="40" r="2" />
+                    <circle class="orb-sat" cx="12.68" cy="40" r="2" />
+                  </g>
+                  <!-- Ranker equalizer bars -->
+                  <g class="orb-bars">
+                    <rect x="18" y="22" width="3" height="16" rx="1.5" />
+                    <rect x="24" y="22" width="3" height="16" rx="1.5" />
+                    <rect x="30" y="22" width="3" height="16" rx="1.5" />
+                    <rect x="36" y="22" width="3" height="16" rx="1.5" />
+                    <rect x="42" y="22" width="3" height="16" rx="1.5" />
+                  </g>
+                  <!-- Presenter starburst -->
+                  <g class="orb-burst">
+                    <line x1="30" y1="6" x2="30" y2="14" />
+                    <line x1="30" y1="46" x2="30" y2="54" />
+                    <line x1="6" y1="30" x2="14" y2="30" />
+                    <line x1="46" y1="30" x2="54" y2="30" />
+                    <line x1="13" y1="13" x2="19" y2="19" />
+                    <line x1="41" y1="41" x2="47" y2="47" />
+                    <line x1="13" y1="47" x2="19" y2="41" />
+                    <line x1="41" y1="19" x2="47" y2="13" />
+                  </g>
+                  <!-- Inner core -->
+                  <circle class="orb-core" cx="30" cy="30" r="6" />
+                  <!-- Done checkmark -->
+                  <path class="orb-check" d="M22 31 L28 37 L40 23" fill="none" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </div>
+              <div class="track-steps">
+                <div class="track-step" id="pillProfiler"><div class="dot"></div><span class="step-label">Profiler</span></div>
+                <div class="track-step" id="pillSearch"><div class="dot"></div><span class="step-label">Search</span></div>
+                <div class="track-step" id="pillRanker"><div class="dot"></div><span class="step-label">Ranker</span></div>
+                <div class="track-step" id="pillPresenter"><div class="dot"></div><span class="step-label">Presenter</span></div>
+              </div>
+            </div>
+            <div class="pipeline__footer">
+              <p id="agentMetrics">Milestone backend akan tampil setelah request selesai.</p>
+            </div>
+          </article>
+        </aside>
+      </section>
 
-        <!-- Generation Settings / Info -->
-        <article class="bento-stats fade-in delay-3">
-          <div class="stat-box">
-            <span id="statMoodLabel" class="stat-label">Mood Terdeteksi</span>
-            <span id="summaryMood" class="stat-val">-</span>
-          </div>
-          <div class="stat-box">
-             <span id="statActivityLabel" class="stat-label">Aktivitas</span>
-             <span id="summaryActivity" class="stat-val">-</span>
-          </div>
-          <div class="stat-box">
-             <span id="statCountLabel" class="stat-label">Jumlah Track</span>
-             <span id="summaryCount" class="stat-val">-</span>
-          </div>
-          <div class="stat-box">
-             <span id="statModeLabel" class="stat-label">Engine Mode</span>
-             <span id="summaryMode" class="stat-val">-</span>
-          </div>
-        </article>
-
-        <!-- Dynamic Output -->
-        <article class="results-panel fade-in delay-4">
-          <div class="results-header">
-             <h2 id="resultsTitle">Rekomendasi Terbaik</h2>
-             <span id="resultsPill" class="results-pill">Smart Match Feed</span>
-             <p id="resultLead" class="result-lead">Masukan prompt di panel kiri untuk memulai iterasi.</p>
-          </div>
-          <div id="recommendationList" class="recommendation-grid"></div>
-        </article>
-      </main>
-    </div>
-
-    <div id="trackDetailModal" class="track-detail-modal" aria-hidden="true">
-      <button id="trackDetailOverlay" class="track-detail-overlay" type="button" aria-label="Close"></button>
-      <section class="track-detail-sheet" role="dialog" aria-modal="true" aria-labelledby="trackDetailTitle">
-        <header class="track-detail-head">
-          <h3 id="trackDetailTitle">Track Detail</h3>
-          <button id="trackDetailCloseBtn" class="track-detail-close" type="button" aria-label="Close">✕</button>
+      <!-- Results -->
+      <section class="results" aria-labelledby="resultsTitle">
+        <header class="section-head" style="grid-column: 1 / -1;">
+          <span class="section-head__num" id="resultsKicker">№ 03 · Curation Feed</span>
+          <h2 class="section-head__title" id="resultsTitle">Rekomendasi Terbaik</h2>
+          <span class="section-head__pill" id="resultsPill">Smart Match Feed</span>
         </header>
 
-        <div class="track-detail-body">
-          <p id="trackDetailSong" class="track-detail-song">-</p>
-          <p id="trackDetailArtist" class="track-detail-artist">-</p>
-
-          <div class="track-detail-meta-grid">
-            <div class="track-detail-meta-item">
-              <span id="trackDetailScoreLabel" class="track-detail-label">Score</span>
-              <span id="trackDetailScoreValue" class="track-detail-value">-</span>
+        <aside class="results__sidebar" aria-label="Sidebar">
+          <article class="intent-card" id="intentCard" hidden>
+            <span class="intent-card__eyebrow" id="intentCardEyebrow">Detected Intent</span>
+            <p class="intent-card__headline" id="intentCardHeadline">—</p>
+            <div class="intent-card__meta">
+              <div>
+                <p class="intent-card__meta-label" id="statMoodLabel">Mood</p>
+                <p class="intent-card__meta-val" id="summaryMood">—</p>
+              </div>
+              <div>
+                <p class="intent-card__meta-label" id="statActivityLabel">Activity</p>
+                <p class="intent-card__meta-val" id="summaryActivity">—</p>
+              </div>
+              <div>
+                <p class="intent-card__meta-label" id="statCountLabel">Tracks</p>
+                <p class="intent-card__meta-val" id="summaryCount">—</p>
+              </div>
+              <div>
+                <p class="intent-card__meta-label" id="statModeLabel">Engine</p>
+                <p class="intent-card__meta-val" id="summaryMode">—</p>
+              </div>
             </div>
-            <div class="track-detail-meta-item">
-              <span id="trackDetailPreviewLabel" class="track-detail-label">Preview</span>
-              <span id="trackDetailPreviewValue" class="track-detail-value">-</span>
+            <div class="intent-card__confidence">
+              <p class="intent-card__meta-label">Confidence</p>
+              <div class="confidence-bar"><div class="confidence-bar__fill" id="confidenceFill" style="width:0%"></div></div>
             </div>
-          </div>
+          </article>
 
-          <div class="track-detail-reason">
-            <p id="trackDetailReasonLabel" class="track-detail-label">Reason</p>
-            <p id="trackDetailReasonText" class="track-detail-reason-text">-</p>
-          </div>
+          <details class="agentic-panel" id="agenticPanel" hidden>
+            <summary id="agenticPanelSummary">Behind the scenes</summary>
+            <div class="agentic-panel__body" id="agenticPanelBody"></div>
+          </details>
+        </aside>
 
-          <a id="trackDetailSpotifyLink" class="track-detail-link" href="#" target="_blank" rel="noopener noreferrer">Open in Spotify</a>
-        </div>
+        <main class="results__main">
+          <p id="resultLead" class="results__lead">Masukan prompt di panel kiri untuk memulai iterasi.</p>
+          <div id="qualityWarnings" class="quality-banner" role="alert" hidden></div>
+          <div id="exportSlot"></div>
+          <div id="refineSlot"></div>
+          <div id="recommendationList" class="track-list"></div>
+        </main>
       </section>
     </div>
 
-    <script src="/static/app.js"></script>
-    <script>
-      // Magic Card glow only runs on hover-capable pointers to avoid extra work on touch devices.
-      const canHover = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
-      if (canHover) {
-        let pointerRaf = 0;
-        let activeCard = null;
-        let pointerX = 0;
-        let pointerY = 0;
+    <!-- Track detail modal -->
+    <div id="trackDetailModal" class="modal" aria-hidden="true">
+      <button id="trackDetailOverlay" class="modal__overlay" type="button" aria-label="Close"></button>
+      <section class="modal__sheet" role="dialog" aria-modal="true" aria-labelledby="trackDetailTitle">
+        <header class="modal__head">
+          <span class="modal__title" id="trackDetailTitle">Track Detail</span>
+          <button id="trackDetailCloseBtn" class="modal__close" type="button" aria-label="Close">✕</button>
+        </header>
+        <p id="trackDetailSong" class="modal__song">—</p>
+        <p id="trackDetailArtist" class="modal__artist">—</p>
+        <div class="modal__meta">
+          <div class="modal__meta-item">
+            <span class="modal__meta-label" id="trackDetailScoreLabel">Score</span>
+            <span class="modal__meta-value" id="trackDetailScoreValue">—</span>
+          </div>
+          <div class="modal__meta-item">
+            <span class="modal__meta-label" id="trackDetailPreviewLabel">Preview</span>
+            <span class="modal__meta-value" id="trackDetailPreviewValue">—</span>
+          </div>
+        </div>
+        <div class="modal__reason">
+          <p class="modal__meta-label" id="trackDetailReasonLabel">Reason</p>
+          <p id="trackDetailReasonText" class="modal__reason-text">—</p>
+        </div>
+        <a id="trackDetailSpotifyLink" class="modal__link" href="#" target="_blank" rel="noopener noreferrer">Open in Spotify ↗</a>
+      </section>
+    </div>
 
-        document.addEventListener("pointermove", (e) => {
-          const card = e.target.closest(".magic-card");
-          if (!card) return;
-          activeCard = card;
-          pointerX = e.clientX;
-          pointerY = e.clientY;
-
-          if (pointerRaf) return;
-          pointerRaf = requestAnimationFrame(() => {
-            pointerRaf = 0;
-            if (!activeCard) return;
-            const rect = activeCard.getBoundingClientRect();
-            const x = pointerX - rect.left;
-            const y = pointerY - rect.top;
-            activeCard.style.setProperty("--mouse-x", `${x}px`);
-            activeCard.style.setProperty("--mouse-y", `${y}px`);
-          });
-        }, { passive: true });
-      }
-    </script>
+    <script type="module" src="/static/js/main.js"></script>
   </body>
 </html>

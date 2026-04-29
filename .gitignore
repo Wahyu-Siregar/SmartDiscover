@@ -26,3 +26,8 @@ dist/
 !.vscode/launch.json
 .DS_Store
 Thumbs.db
+
+SkripsiEcek-ecek/
+docs/
+
+benchmark_results/

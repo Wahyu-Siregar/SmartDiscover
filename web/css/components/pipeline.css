@@ -1,0 +1,252 @@
+@layer components {
+  .pipeline {
+    background: var(--canvas-soft);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-3);
+    padding: var(--space-5);
+    display: flex; flex-direction: column; gap: var(--space-4);
+    overflow: hidden;
+    position: relative;
+  }
+  .pipeline.is-working {
+    border-color: rgba(255, 91, 58, 0.4);
+    box-shadow: var(--shadow-glow);
+  }
+  .pipeline__header {
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: var(--space-3);
+  }
+  .pipeline__title {
+    font-family: var(--font-display);
+    font-size: var(--fs-headline);
+    letter-spacing: -0.01em;
+    font-weight: 500;
+  }
+  .pipeline__stage-text {
+    font-family: var(--font-mono);
+    font-size: var(--fs-eyebrow);
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+  }
+
+  .track-container {
+    position: relative;
+    height: 80px;
+    margin-block: var(--space-3);
+    padding-inline: var(--space-3);
+  }
+  .track-line, .track-active {
+    position: absolute;
+    top: 50%;
+    left: 1rem; right: 1rem;
+    height: 2px;
+    transform: translateY(-50%);
+    border-radius: var(--radius-pill);
+  }
+  .track-line { background: var(--rule); }
+  .track-active {
+    right: auto;
+    width: 0;
+    background: linear-gradient(90deg, var(--accent), var(--accent-soft));
+    transition: width var(--dur-3) var(--ease-out);
+  }
+  /* ---- Agent orb (inline SVG, stage-driven via [data-stage]) ---- */
+  .agent-orb {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 48px; height: 48px;
+    transform: translate(-50%, -50%);
+    transition: left var(--dur-3) var(--ease-out);
+    pointer-events: none;
+    will-change: transform, left;
+  }
+  .agent-orb svg { width: 100%; height: 100%; overflow: visible; }
+
+  /* Aura — soft halo, intensifies when active */
+  .orb-aura {
+    fill: var(--accent);
+    opacity: 0;
+    transform-origin: 30px 30px;
+    transform-box: fill-box;
+    filter: blur(6px);
+    transition: opacity var(--dur-3) var(--ease-out);
+  }
+  .agent-orb[data-stage="0"] .orb-aura { opacity: 0.18; animation: orb-aura-pulse 3.6s var(--ease-soft) infinite; }
+  .agent-orb:not([data-stage="0"]) .orb-aura { opacity: 0.45; animation: orb-aura-pulse 1.4s var(--ease-soft) infinite; }
+  @keyframes orb-aura-pulse {
+    0%, 100% { transform: scale(0.9); opacity: 0.18; }
+    50%      { transform: scale(1.1); opacity: 0.5; }
+  }
+
+  /* Outer ring — dashed, rotates when active */
+  .orb-ring {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 1.4;
+    stroke-dasharray: 4 5;
+    opacity: 0.55;
+    transform-origin: 30px 30px;
+    transform-box: fill-box;
+    animation: orb-ring-spin 6s linear infinite;
+  }
+  .agent-orb[data-stage="0"] .orb-ring { opacity: 0.25; animation-duration: 14s; }
+  .agent-orb[data-stage="2"] .orb-ring,
+  .agent-orb[data-stage="3"] .orb-ring { animation-duration: 2.4s; opacity: 0.85; }
+  @keyframes orb-ring-spin { to { transform: rotate(360deg); } }
+
+  /* Core — pulsing center */
+  .orb-core {
+    fill: var(--accent);
+    transform-origin: 30px 30px;
+    transform-box: fill-box;
+    animation: orb-core-pulse 2.4s var(--ease-soft) infinite;
+    filter: drop-shadow(0 0 6px rgba(255, 91, 58, 0.6));
+  }
+  @keyframes orb-core-pulse {
+    0%, 100% { transform: scale(0.92); opacity: 0.85; }
+    50%      { transform: scale(1.08); opacity: 1; }
+  }
+  .agent-orb[data-stage="0"] .orb-core { animation-duration: 3.2s; opacity: 0.7; }
+
+  /* Stage-specific motifs — hidden by default */
+  .orb-scan, .orb-orbit, .orb-bars, .orb-burst, .orb-check {
+    opacity: 0;
+    transition: opacity var(--dur-2) var(--ease-out);
+    transform-origin: 30px 30px;
+    transform-box: fill-box;
+  }
+  .orb-scan line {
+    stroke: var(--accent-soft);
+    stroke-width: 1.4;
+    stroke-linecap: round;
+  }
+  .orb-sat { fill: var(--accent-soft); }
+  .orb-bars rect { fill: var(--accent); transform-origin: center; transform-box: fill-box; }
+  .orb-burst line { stroke: var(--accent-soft); stroke-width: 1.5; stroke-linecap: round; }
+  .orb-check { stroke: var(--ok); stroke-width: 2.5; }
+
+  /* Profiler — horizontal scan */
+  .agent-orb[data-stage="1"] .orb-scan {
+    opacity: 1;
+    animation: orb-scan-y 1.2s var(--ease-soft) infinite;
+  }
+  @keyframes orb-scan-y {
+    0%   { transform: translateY(-18px); opacity: 0; }
+    20%  { opacity: 1; }
+    80%  { opacity: 1; }
+    100% { transform: translateY(18px); opacity: 0; }
+  }
+
+  /* Search — orbiting satellites */
+  .agent-orb[data-stage="2"] .orb-orbit {
+    opacity: 1;
+    animation: orb-orbit-spin 1.6s linear infinite;
+  }
+  @keyframes orb-orbit-spin { to { transform: rotate(360deg); } }
+
+  /* Ranker — equalizer bars */
+  .agent-orb[data-stage="3"] .orb-bars {
+    opacity: 1;
+  }
+  .agent-orb[data-stage="3"] .orb-bars rect:nth-child(1) { animation: orb-bar-eq 0.8s ease-in-out infinite; }
+  .agent-orb[data-stage="3"] .orb-bars rect:nth-child(2) { animation: orb-bar-eq 0.7s ease-in-out infinite 0.1s; }
+  .agent-orb[data-stage="3"] .orb-bars rect:nth-child(3) { animation: orb-bar-eq 0.9s ease-in-out infinite 0.2s; }
+  .agent-orb[data-stage="3"] .orb-bars rect:nth-child(4) { animation: orb-bar-eq 0.75s ease-in-out infinite 0.05s; }
+  .agent-orb[data-stage="3"] .orb-bars rect:nth-child(5) { animation: orb-bar-eq 0.85s ease-in-out infinite 0.15s; }
+  /* Bars dim the core so they read clearly */
+  .agent-orb[data-stage="3"] .orb-core { opacity: 0; }
+  @keyframes orb-bar-eq {
+    0%, 100% { transform: scaleY(0.35); }
+    50%      { transform: scaleY(1); }
+  }
+
+  /* Presenter — starburst */
+  .agent-orb[data-stage="4"] .orb-burst {
+    opacity: 1;
+    animation: orb-burst-spin 4s linear infinite;
+  }
+  .agent-orb[data-stage="4"] .orb-burst line {
+    animation: orb-burst-pulse 1.4s ease-in-out infinite;
+    transform-origin: 30px 30px;
+    transform-box: fill-box;
+  }
+  @keyframes orb-burst-spin { to { transform: rotate(120deg); } }
+  @keyframes orb-burst-pulse {
+    0%, 100% { opacity: 0.4; }
+    50%      { opacity: 1; }
+  }
+
+  /* Done state — checkmark draws in, core glows green */
+  .agent-orb.is-done .orb-check {
+    opacity: 1;
+    stroke-dasharray: 32;
+    stroke-dashoffset: 32;
+    animation: orb-check-draw 0.5s var(--ease-out) forwards;
+  }
+  .agent-orb.is-done .orb-core { fill: var(--ok); }
+  .agent-orb.is-done .orb-aura { fill: var(--ok); opacity: 0.4; animation: none; }
+  .agent-orb.is-done .orb-ring { stroke: var(--ok); animation: none; opacity: 0.35; }
+  @keyframes orb-check-draw { to { stroke-dashoffset: 0; } }
+
+  /* Reduced motion — settle to static states */
+  @media (prefers-reduced-motion: reduce) {
+    .orb-aura, .orb-core, .orb-ring,
+    .orb-scan, .orb-orbit, .orb-bars rect, .orb-burst, .orb-burst line {
+      animation: none !important;
+    }
+    .agent-orb[data-stage]:not([data-stage="0"]) .orb-aura { opacity: 0.4; }
+  }
+  .track-steps {
+    position: relative; height: 100%;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .track-step {
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+  }
+  .track-step .dot {
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: var(--canvas);
+    border: 2px solid var(--rule-strong);
+    transition: background var(--dur-2), border-color var(--dur-2), box-shadow var(--dur-2);
+  }
+  .track-step.active .dot {
+    background: var(--accent);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 6px rgba(255, 91, 58, 0.18);
+  }
+  .track-step.done .dot {
+    background: var(--ok);
+    border-color: var(--ok);
+  }
+  .step-label {
+    font-family: var(--font-mono);
+    font-size: var(--fs-eyebrow);
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+  }
+  .track-step.active .step-label { color: var(--accent); }
+  .track-step.done .step-label { color: var(--ok); }
+
+  .pipeline__footer {
+    border-top: 1px solid var(--rule);
+    padding-top: var(--space-3);
+    color: var(--muted);
+    font-size: var(--fs-small);
+  }
+
+  @media (max-width: 640px) {
+    .pipeline { padding: var(--space-4); }
+    .pipeline__header { flex-wrap: wrap; }
+    .track-container { height: 56px; padding-inline: var(--space-2); }
+    .track-line, .track-active { left: 0.5rem; right: 0.5rem; }
+    .agent-orb { width: 36px; height: 36px; }
+    .step-label {
+      display: none;          /* labels too cramped under each dot */
+    }
+    .track-step .dot { width: 10px; height: 10px; }
+  }
+}

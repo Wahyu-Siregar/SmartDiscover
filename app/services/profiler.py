@@ -1,6 +1,7 @@
-import re
 import json
+import re
 from pathlib import Path
+from typing import Any
 
 from app.models import IntentProfile
 from app.services.openrouter_client import OpenRouterClient
@@ -59,6 +60,38 @@ GENRE_ALIASES: dict[str, str] = {
 }
 
 
+# Map app-level genre tags to Spotify Recommendations seed_genres (canonical).
+# Only safe-known seeds; unknown tags are filtered out at runtime against
+# /v1/recommendations/available-genre-seeds.
+GENRE_TO_SPOTIFY_SEEDS: dict[str, list[str]] = {
+    "lo-fi": ["chill", "study"],
+    "ambient": ["ambient", "chill"],
+    "classical": ["classical"],
+    "pop": ["pop"],
+    "rock": ["rock"],
+    "jazz": ["jazz"],
+    "indie": ["indie", "indie-pop"],
+    "batak": ["world-music"],
+    "jawa": ["world-music"],
+    "minang": ["world-music"],
+}
+
+MOOD_TO_AUDIO: dict[str, dict[str, float]] = {
+    "calm":      {"energy": 0.30, "valence": 0.45, "tempo": 85.0,  "acousticness": 0.55},
+    "focus":     {"energy": 0.35, "valence": 0.50, "tempo": 95.0,  "instrumentalness": 0.55},
+    "happy":     {"energy": 0.75, "valence": 0.80, "tempo": 118.0, "danceability": 0.70},
+    "sad":       {"energy": 0.30, "valence": 0.20, "tempo": 80.0,  "acousticness": 0.55},
+    "energetic": {"energy": 0.85, "valence": 0.65, "tempo": 135.0, "danceability": 0.70},
+    "neutral":   {"energy": 0.50, "valence": 0.50, "tempo": 110.0},
+}
+
+ENERGY_OVERRIDE: dict[str, dict[str, float]] = {
+    "low":    {"energy": 0.25, "tempo": 80.0},
+    "medium": {"energy": 0.50, "tempo": 110.0},
+    "high":   {"energy": 0.85, "tempo": 135.0},
+}
+
+
 def _load_keyword_config() -> tuple[
     dict[str, list[str]],
     dict[str, list[str]],
@@ -97,54 +130,122 @@ def _load_keyword_config() -> tuple[
 MOOD_KEYWORDS, GENRE_KEYWORDS, LOCALE_KEYWORDS, STRICT_LOCALE_CUES, GENRE_ALIASES = _load_keyword_config()
 
 
+_FEW_SHOT_EXAMPLES = """Examples:
+
+Input: "lagu batak buat malam minggu"
+Output: {"mood":"neutral","activity":"listening","genre":["batak"],"energy":"medium","language":"id","locale":"indonesia","strict_locale":false,"confidence":0.85,"target_audio":{"energy":0.5,"valence":0.55,"tempo":105},"seed_genres":["world-music"]}
+
+Input: "sad night songs to cry to"
+Output: {"mood":"sad","activity":"listening","genre":["indie","pop"],"energy":"low","language":"en","locale":"","strict_locale":false,"confidence":0.9,"target_audio":{"energy":0.3,"valence":0.2,"tempo":80,"acousticness":0.6},"seed_genres":["sad","acoustic","indie"]}
+
+Input: "high tempo workout mix"
+Output: {"mood":"energetic","activity":"workout","genre":["pop","electronic"],"energy":"high","language":"en","locale":"","strict_locale":false,"confidence":0.92,"target_audio":{"energy":0.9,"valence":0.65,"tempo":140,"danceability":0.75},"seed_genres":["work-out","electronic","pop"]}
+
+Input: "lagu nasionalisme indonesia"
+Output: {"mood":"happy","activity":"listening","genre":[],"energy":"medium","language":"id","locale":"indonesia","strict_locale":true,"confidence":0.95,"target_audio":{"energy":0.6,"valence":0.7,"tempo":110},"seed_genres":[]}
+"""
+
+
 class ProfilerAgent:
     def __init__(self, llm: OpenRouterClient) -> None:
         self.llm = llm
         self.last_used_llm = False
 
     async def profile(self, text: str) -> IntentProfile:
+        heuristic = self._profile_heuristic(text)
+
         llm_profile = await self._profile_with_llm(text)
-        if llm_profile is not None:
-            self.last_used_llm = True
-            return llm_profile
+        if llm_profile is None:
+            self.last_used_llm = False
+            return heuristic
 
-        self.last_used_llm = False
-        return self._profile_heuristic(text)
+        # Confidence-based retry once with lower temperature when result is unsure.
+        if llm_profile.confidence < 0.4:
+            retried = await self._profile_with_llm(text, temperature=0.05)
+            if retried is not None and retried.confidence > llm_profile.confidence:
+                llm_profile = retried
 
-    def _profile_heuristic(self, text: str) -> IntentProfile:
-        lowered = text.lower()
-        mood = self._infer_mood(lowered)
-        activity = self._infer_activity(lowered)
-        genres = self._infer_genres(lowered)
-        energy = self._infer_energy(lowered)
-        language = self._infer_language(text)
-        locale = self._infer_locale(lowered)
-        strict_locale = self._infer_strict_locale(lowered, locale)
+        self.last_used_llm = True
+        return self._merge(heuristic, llm_profile)
+
+    # ---- Hybrid merge -------------------------------------------------
+
+    def _merge(self, heuristic: IntentProfile, llm: IntentProfile) -> IntentProfile:
+        # Genre: heuristic Indonesia-specific findings act as floor (high precision).
+        merged_genre: list[str] = []
+        for g in heuristic.genre + llm.genre:
+            if g and g not in merged_genre:
+                merged_genre.append(g)
+
+        # Prefer LLM mood/activity/energy when confidence is reasonable.
+        prefer_llm = llm.confidence >= 0.5
+        mood = llm.mood if prefer_llm and llm.mood else heuristic.mood
+        activity = llm.activity if prefer_llm and llm.activity else heuristic.activity
+        energy = llm.energy if prefer_llm else heuristic.energy
+        language = llm.language or heuristic.language
+
+        locale = llm.locale or heuristic.locale
+        strict_locale = bool(llm.strict_locale or heuristic.strict_locale)
+
+        # target_audio: prefer LLM (richer), but fill missing keys from heuristic table.
+        target_audio = dict(llm.target_audio or {})
+        heuristic_audio = self._derive_target_audio(mood, energy)
+        for k, v in heuristic_audio.items():
+            target_audio.setdefault(k, v)
+
+        # seed_genres: union LLM + heuristic mapping, dedup.
+        seed_genres: list[str] = []
+        for s in (llm.seed_genres or []) + self._derive_seed_genres(merged_genre, mood):
+            if s and s not in seed_genres:
+                seed_genres.append(s)
+
+        confidence = max(0.0, min(1.0, (llm.confidence + (0.6 if heuristic.genre else 0.4)) / 2))
+
         return IntentProfile(
             mood=mood,
             activity=activity,
-            genre=genres,
+            genre=merged_genre,
             energy=energy,
             language=language,
             locale=locale,
             strict_locale=strict_locale,
+            confidence=confidence,
+            target_audio=target_audio,
+            seed_genres=seed_genres,
+            decade=llm.decade or heuristic.decade,
         )
 
-    async def _profile_with_llm(self, text: str) -> IntentProfile | None:
+    # ---- LLM path -----------------------------------------------------
+
+    async def _profile_with_llm(self, text: str, *, temperature: float = 0.2) -> IntentProfile | None:
         if not self.llm.enabled:
             return None
 
         system_prompt = (
             "You are Profiler Agent for SmartDiscover. "
-            "Extract user intent into strict JSON with keys: mood, activity, genre, energy, language, locale, strict_locale. "
-            "Rules: genre must be array of strings; energy must be one of low|medium|high; "
-            "language must be id or en based on dominant user language; "
+            "Extract user intent into strict JSON with keys: mood, activity, genre, energy, language, locale, "
+            "strict_locale, confidence, target_audio, seed_genres, decade. "
+            "Rules: genre is array of strings; energy is one of low|medium|high; "
+            "language is id or en (dominant language of input); "
             "locale is empty or a country-like target such as 'indonesia'; "
-            "strict_locale is true when user explicitly asks for national/local-only songs (e.g. nationalism request). "
-            "Return JSON only."
+            "strict_locale is true when user explicitly asks for national/local-only songs (e.g. nationalism). "
+            "confidence is 0..1 reflecting how sure you are. "
+            "target_audio is a numeric map with optional keys energy(0..1), valence(0..1), danceability(0..1), "
+            "acousticness(0..1), instrumentalness(0..1), tempo(bpm). "
+            "seed_genres is up to 5 Spotify-canonical genres for /v1/recommendations (e.g. pop, indie-pop, chill, "
+            "study, work-out, classical, jazz, electronic, acoustic, sad, ambient, world-music). "
+            "decade is empty or like '2010s'. "
+            "Return JSON only.\n\n"
+            + _FEW_SHOT_EXAMPLES
         )
         user_prompt = f"Input text: {text}"
-        data = await self.llm.chat_json(system_prompt, user_prompt, max_tokens=300)
+        data = await self.llm.chat_json(
+            system_prompt,
+            user_prompt,
+            max_tokens=400,
+            temperature=temperature,
+            json_mode=True,
+        )
         if not data:
             return None
 
@@ -170,6 +271,34 @@ class ProfilerAgent:
             if not strict_locale:
                 strict_locale = self._infer_strict_locale(text.lower(), locale)
 
+            try:
+                confidence = float(data.get("confidence", 0.5))
+            except Exception:
+                confidence = 0.5
+            confidence = max(0.0, min(1.0, confidence))
+
+            target_audio_raw = data.get("target_audio") or {}
+            target_audio: dict[str, float] = {}
+            if isinstance(target_audio_raw, dict):
+                for k, v in target_audio_raw.items():
+                    if k not in {"energy", "valence", "danceability", "acousticness", "instrumentalness", "tempo", "popularity"}:
+                        continue
+                    try:
+                        target_audio[k] = float(v)
+                    except Exception:
+                        continue
+
+            seed_raw = data.get("seed_genres") or []
+            seed_genres: list[str] = []
+            if isinstance(seed_raw, list):
+                for s in seed_raw:
+                    s_str = str(s).strip().lower()
+                    if s_str and s_str not in seed_genres:
+                        seed_genres.append(s_str)
+            seed_genres = seed_genres[:5]
+
+            decade = str(data.get("decade", "")).strip().lower()
+
             return IntentProfile(
                 mood=mood,
                 activity=activity,
@@ -178,9 +307,65 @@ class ProfilerAgent:
                 language=language,
                 locale=locale,
                 strict_locale=strict_locale,
+                confidence=confidence,
+                target_audio=target_audio,
+                seed_genres=seed_genres,
+                decade=decade,
             )
         except Exception:
             return None
+
+    # ---- Heuristic path -----------------------------------------------
+
+    def _profile_heuristic(self, text: str) -> IntentProfile:
+        lowered = text.lower()
+        mood = self._infer_mood(lowered)
+        activity = self._infer_activity(lowered)
+        genres = self._infer_genres(lowered)
+        energy = self._infer_energy(lowered)
+        language = self._infer_language(text)
+        locale = self._infer_locale(lowered)
+        strict_locale = self._infer_strict_locale(lowered, locale)
+        target_audio = self._derive_target_audio(mood, energy)
+        seed_genres = self._derive_seed_genres(genres, mood)
+        return IntentProfile(
+            mood=mood,
+            activity=activity,
+            genre=genres,
+            energy=energy,
+            language=language,
+            locale=locale,
+            strict_locale=strict_locale,
+            confidence=0.55 if genres or mood != "neutral" else 0.35,
+            target_audio=target_audio,
+            seed_genres=seed_genres,
+            decade="",
+        )
+
+    def _derive_target_audio(self, mood: str, energy: str) -> dict[str, float]:
+        base = dict(MOOD_TO_AUDIO.get(mood, MOOD_TO_AUDIO["neutral"]))
+        override = ENERGY_OVERRIDE.get(energy, {})
+        # Energy override wins over mood-derived energy/tempo.
+        base.update(override)
+        return base
+
+    def _derive_seed_genres(self, genres: list[str], mood: str) -> list[str]:
+        out: list[str] = []
+        for g in genres:
+            for seed in GENRE_TO_SPOTIFY_SEEDS.get(g, []):
+                if seed not in out:
+                    out.append(seed)
+        if not out:
+            mood_to_seeds = {
+                "calm": ["chill", "ambient"],
+                "focus": ["study", "chill"],
+                "happy": ["pop", "happy"],
+                "sad": ["sad", "acoustic"],
+                "energetic": ["work-out", "electronic"],
+                "neutral": ["pop"],
+            }
+            out = mood_to_seeds.get(mood, ["pop"])
+        return out[:5]
 
     def _infer_mood(self, lowered: str) -> str:
         for mood, keys in MOOD_KEYWORDS.items():
@@ -225,7 +410,6 @@ class ProfilerAgent:
         return "medium"
 
     def _infer_language(self, text: str) -> str:
-        # Very light heuristic for Bahasa dominance.
         if re.search(r"\b(aku|yang|buat|dan|lagu|tenang|fokus)\b", text.lower()):
             return "id"
         return "en"

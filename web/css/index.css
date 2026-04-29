@@ -1,0 +1,16 @@
+/* SmartDiscover — single CSS entry */
+@layer reset, tokens, base, layout, components, utilities;
+
+@import url("./reset.css") layer(reset);
+@import url("./tokens.css") layer(tokens);
+@import url("./base.css") layer(base);
+@import url("./layout.css") layer(layout);
+@import url("./utilities.css") layer(utilities);
+
+@import url("./components/buttons.css") layer(components);
+@import url("./components/forms.css") layer(components);
+@import url("./components/cards.css") layer(components);
+@import url("./components/chips.css") layer(components);
+@import url("./components/pipeline.css") layer(components);
+@import url("./components/modal.css") layer(components);
+@import url("./components/preview.css") layer(components);

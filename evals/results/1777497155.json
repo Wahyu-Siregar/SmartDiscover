@@ -1,0 +1,1758 @@
+{
+  "aggregate": {
+    "mood_match": 0.475,
+    "genre_recall": 1.0,
+    "genre_jaccard": 0.36662500000000003,
+    "locale_match": 0.65,
+    "strict_match": 0.85
+  },
+  "overall": 0.74375,
+  "threshold": 0.7,
+  "rows": [
+    {
+      "prompt": "lagu fokus belajar malam yang tenang",
+      "expected": {
+        "mood": "focus",
+        "genre": [
+          "lo-fi"
+        ],
+        "locale": "",
+        "strict_locale": false
+      },
+      "actual": {
+        "mood": "calm",
+        "activity": "study",
+        "genre": [
+          "lo-fi",
+          "ambient",
+          "instrumental"
+        ],
+        "energy": "low",
+        "language": "id",
+        "locale": "indonesia",
+        "strict_locale": false,
+        "confidence": 0.675,
+        "target_audio": {
+          "energy": 0.2,
+          "valence": 0.4,
+          "danceability": 0.2,
+          "acousticness": 0.7,
+          "instrumentalness": 0.9,
+          "tempo": 70.0
+        },
+        "seed_genres": [
+          "study",
+          "ambient",
+          "chill"
+        ],
+        "decade": ""
+      },
+      "scores": {
+        "mood_match": 0,
+        "genre_recall": 1.0,
+        "genre_jaccard": 0.333,
+        "locale_match": 0,
+        "strict_match": 1
+      },
+      "used_llm": true
+    },
+    {
+      "prompt": "calm playlist for late-night reading",
+      "expected": {
+        "mood": "calm",
+        "genre": [],
+        "locale": "",
+        "strict_locale": false
+      },
+      "actual": {
+        "mood": "calm",
+        "activity": "reading",
+        "genre": [
+          "ambient",
+          "acoustic",
+          "classical"
+        ],
+        "energy": "low",
+        "language": "en",
+        "locale": "",
+        "strict_locale": false,
+        "confidence": 0.675,
+        "target_audio": {
+          "energy": 0.2,
+          "valence": 0.4,
+          "danceability": 0.2,
+          "acousticness": 0.8,
+          "instrumentalness": 0.7,
+          "tempo": 70.0
+        },
+        "seed_genres": [
+          "ambient",
+          "classical",
+          "acoustic",
+          "chill"
+        ],
+        "decade": ""
+      },
+      "scores": {
+        "mood_match": 1,
+        "genre_recall": 1.0,
+        "genre_jaccard": 0.0,
+        "locale_match": 1,
+        "strict_match": 1
+      },
+      "used_llm": true
+    },
+    {
+      "prompt": "energetic workout mix high tempo",
+      "expected": {
+        "mood": "energetic",
+        "genre": [],
+        "locale": "",
+        "strict_locale": false
+      },
+      "actual": {
+        "mood": "energetic",
+        "activity": "workout",
+        "genre": [
+          "pop",
+          "electronic"
+        ],
+        "energy": "high",
+        "language": "en",
+        "locale": "",
+        "strict_locale": false,
+        "confidence": 0.69,
+        "target_audio": {
+          "energy": 0.9,
+          "valence": 0.7,
+          "danceability": 0.8,
+          "tempo": 145.0
+        },
+        "seed_genres": [
+          "work-out",
+          "electronic",
+          "pop"
+        ],
+        "decade": ""
+      },
+      "scores": {
+        "mood_match": 1,
+        "genre_recall": 1.0,
+        "genre_jaccard": 0.0,
+        "locale_match": 1,
+        "strict_match": 1
+      },
+      "used_llm": true
+    },
+    {
+      "prompt": "lagu sedih galau tengah malam",
+      "expected": {
+        "mood": "sad",
+        "genre": [],
+        "locale": "",
+        "strict_locale": false
+      },
+      "actual": {
+        "mood": "sad",
+        "activity": "listening",
+        "genre": [
+          "pop",
+          "ballad"
+        ],
+        "energy": "low",
+        "language": "id",
+        "locale": "indonesia",
+        "strict_locale": false,
+        "confidence": 0.675,
+        "target_audio": {
+          "energy": 0.2,
+          "valence": 0.2,
+          "danceability": 0.3,
+          "acousticness": 0.7,
+          "tempo": 75.0
+        },
+        "seed_genres": [
+          "sad",
+          "acoustic",
+          "piano",
+          "pop"
+        ],
+        "decade": ""
+      },
+      "scores": {
+        "mood_match": 1,
+        "genre_recall": 1.0,
+        "genre_jaccard": 0.0,
+        "locale_match": 0,
+        "strict_match": 1
+      },
+      "used_llm": true
+    },
+    {
+      "prompt": "happy upbeat road trip songs",
+      "expected": {
+        "mood": "happy",
+        "genre": [],
+        "locale": "",
+        "strict_locale": false
+      },
+      "actual": {
+        "mood": "happy",
+        "activity": "road trip",
+        "genre": [
+          "pop",
+          "rock",
+          "indie"
+        ],
+        "energy": "high",
+        "language": "en",
+        "locale": "",
+        "strict_locale": false,
+        "confidence": 0.675,
+        "target_audio": {
+          "energy": 0.8,
+          "valence": 0.8,
+          "danceability": 0.7,
+          "tempo": 120.0
+        },
+        "seed_genres": [
+          "pop",
+          "rock",
+          "indie",
+          "indie-pop"
+        ],
+        "decade": ""
+      },
+      "scores": {
+        "mood_match": 1,
+        "genre_recall": 1.0,
+        "genre_jaccard": 0.0,
+        "locale_match": 1,
+        "strict_match": 1
+      },
+      "used_llm": true
+    },
+    {
+      "prompt": "lagu batak buat malam minggu",
+      "expected": {
+        "mood": "neutral",
+        "genre": [
+          "batak"
+        ],
+        "locale": "",
+        "strict_locale": false
+      },
+      "actual": {
+        "mood": "neutral",
+        "activity": "listening",
+        "genre": [
+          "batak"
+        ],
+        "energy": "medium",
+        "language": "id",
+        "locale": "indonesia",
+        "strict_locale": false,
+        "confidence": 0.7749999999999999,
+        "target_audio": {
+          "energy": 0.5,
+          "valence": 0.55,
+          "tempo": 105.0
+        },
+        "seed_genres": [
+          "world-music"
+        ],
+        "decade": ""
+      },
+      "scores": {
+        "mood_match": 1,
+        "genre_recall": 1.0,
+        "genre_jaccard": 1.0,
+        "locale_match": 0,
+        "strict_match": 1
+      },
+      "used_llm": true
+    },
+    {
+      "prompt": "lagu jawa campursari klasik",
+      "expected": {
+        "mood": "neutral",
+        "genre": [
+          "jawa"
+        ],
+        "locale": "",
+        "strict_locale": false
+      },
+      "actual": {
+        "mood": "neutral",
+        "activity": "listening",
+        "genre": [
+          "classical",
+          "jawa",
+          "campursari"
+        ],
+        "energy": "medium",
+        "language": "id",
+        "locale": "indonesia",
+        "strict_locale": true,
+        "confidence": 0.7749999999999999,
+        "target_audio": {
+          "energy": 0.5,
+          "valence": 0.6,
+          "tempo": 90.0,
+          "acousticness": 0.7
+        },
+        "seed_genres": [
+          "world-music",
+          "classical"
+        ],
+        "decade": ""
+      },
+      "scores": {
+        "mood_match": 1,
+        "genre_recall": 1.0,
+        "genre_jaccard": 0.333,
+        "locale_match": 0,
+        "strict_match": 0
+      },
+      "used_llm": true
+    },
+    {
+      "prompt": "lagu minang padang nostalgia",
+      "expected": {
+        "mood": "neutral",
+        "genre": [
+          "minang"
+        ],
+        "locale": "",
+        "strict_locale": false
+      },
+      "actual": {
+        "mood": "nostalgic",
+        "activity": "listening",
+        "genre": [
+          "minang",
+          "padang"
+        ],
+        "energy": "low",
+        "language": "id",
+        "locale": "indonesia",
+        "strict_locale": true,
+        "confidence": 0.7749999999999999,
+        "target_audio": {
+          "energy": 0.4,
+          "valence": 0.5,
+          "tempo": 90.0,
+          "acousticness": 0.7
+        },
+        "seed_genres": [
+          "world-music"
+        ],
+        "decade": ""
+      },
+      "scores": {
+        "mood_match": 0,
+        "genre_recall": 1.0,
+        "genre_jaccard": 0.5,
+        "locale_match": 0,
+        "strict_match": 0
+      },
+      "used_llm": true
+    },
+    {
+      "prompt": "lo-fi beats to study to",
+      "expected": {
+        "mood": "focus",
+        "genre": [
+          "lo-fi"
+        ],
+        "locale": "",
+        "strict_locale": false
+      },
+      "actual": {
+        "mood": "focused",
+        "activity": "study",
+        "genre": [
+          "lo-fi"
+        ],
+        "energy": "low",
+        "language": "en",
+        "locale": "",
+        "strict_locale": false,
+        "confidence": 0.79,
+        "target_audio": {
+          "energy": 0.3,
+          "valence": 0.4,
+          "danceability": 0.3,
+          "acousticness": 0.7,
+          "instrumentalness": 0.9,
+          "tempo": 85.0
+        },
+        "seed_genres": [
+          "study",
+          "ambient",
+          "chill"
+        ],
+        "decade": ""
+      },
+      "scores": {
+        "mood_match": 0,
+        "genre_recall": 1.0,
+        "genre_jaccard": 1.0,
+        "locale_match": 1,
+        "strict_match": 1
+      },
+      "used_llm": true
+    },
+    {
+      "prompt": "ambient instrumental untuk tidur",
+      "expected": {
+        "mood": "calm",
+        "genre": [
+          "ambient"
+        ],
+        "locale": "",
+        "strict_locale": false
+      },
+      "actual": {
+        "mood": "calm",
+        "activity": "sleep",
+        "genre": [
+          "ambient",
+          "instrumental"
+        ],
+        "energy": "low",
+        "language": "id",
+        "locale": "",
+        "strict_locale": false,
+        "confidence": 0.7749999999999999,
+        "target_audio": {
+          "energy": 0.1,
+          "valence": 0.4,
+          "acousticness": 0.8,
+          "instrumentalness": 0.9,
+          "tempo": 60.0
+        },
+        "seed_genres": [
+          "ambient",
+          "sleep",
+          "chill"
+        ],
+        "decade": ""
+      },
+      "scores": {
+        "mood_match": 1,
+        "genre_recall": 1.0,
+        "genre_jaccard": 0.5,
+        "locale_match": 1,
+        "strict_match": 1
+      },
+      "used_llm": true
+    },
+    {
+      "prompt": "lagu nasionalisme indonesia merah putih",
+      "expected": {
+        "mood": "happy",
+        "genre": [],
+        "locale": "indonesia",
+        "strict_locale": true
+      },
+      "actual": {
+        "mood": "patriotic",
+        "activity": "listening",
+        "genre": [
+          "national",
+          "folk"
+        ],
+        "energy": "medium",
+        "language": "id",
+        "locale": "indonesia",
+        "strict_locale": true,
+        "confidence": 0.69,
+        "target_audio": {
+          "energy": 0.6,
+          "valence": 0.7,
+          "tempo": 110.0
+        },
+        "seed_genres": [
+          "pop"
+        ],
+        "decade": ""
+      },
+      "scores": {
+        "mood_match": 0,
+        "genre_recall": 1.0,
+        "genre_jaccard": 0.0,
+        "locale_match": 1,
+        "strict_match": 1
+      },
+      "used_llm": true
+    },
+    {
+      "prompt": "patriotic indonesia kemerdekaan",
+      "expected": {
+        "mood": "happy",
+        "genre": [],
+        "locale": "indonesia",
+        "strict_locale": true
+      },
+      "actual": {
+        "mood": "happy",
+        "activity": "listening",
+        "genre": [
+          "patriotic"
+        ],
+        "energy": "high",
+        "language": "id",
+        "locale": "indonesia",
+        "strict_locale": true,
+        "confidence": 0.69,
+        "target_audio": {
+          "energy": 0.8,
+          "valence": 0.8,
+          "tempo": 120.0,
+          "danceability": 0.7
+        },
+        "seed_genres": [
+          "world-music",
+          "pop",
+          "happy"
+        ],
+        "decade": ""
+      },
+      "scores": {
+        "mood_match": 1,
+        "genre_recall": 1.0,
+        "genre_jaccard": 0.0,
+        "locale_match": 1,
+        "strict_match": 1
+      },
+      "used_llm": true
+    },
+    {
+      "prompt": "indie pop sore hari santai",
+      "expected": {
+        "mood": "calm",
+        "genre": [
+          "indie"
+        ],
+        "locale": "",
+        "strict_locale": false
+      },
+      "actual": {
+        "mood": "relaxed",
+        "activity": "relaxing",
+        "genre": [
+          "pop",
+          "indie",
+          "indie-pop"
+        ],
+        "energy": "low",
+        "language": "id",
+        "locale": "indonesia",
+        "strict_locale": false,
+        "confidence": 0.7749999999999999,
+        "target_audio": {
+          "energy": 0.3,
+          "valence": 0.6,
+          "danceability": 0.4,
+          "acousticness": 0.5,
+          "tempo": 90.0
+        },
+        "seed_genres": [
+          "indie-pop",
+          "chill",
+          "acoustic",
+          "pop",
+          "indie"
+        ],
+        "decade": ""
+      },
+      "scores": {
+        "mood_match": 0,
+        "genre_recall": 1.0,
+        "genre_jaccard": 0.333,
+        "locale_match": 0,
+        "strict_match": 1
+      },
+      "used_llm": true
+    },
+    {
+      "prompt": "rock workout heavy gym",
+      "expected": {
+        "mood": "energetic",
+        "genre": [
+          "rock"
+        ],
+        "locale": "",
+        "strict_locale": false
+      },
+      "actual": {
+        "mood": "energetic",
+        "activity": "workout",
+        "genre": [
+          "rock"
+        ],
+        "energy": "high",
+        "language": "en",
+        "locale": "",
+        "strict_locale": false,
+        "confidence": 0.7749999999999999,
+        "target_audio": {
+          "energy": 0.9,
+          "valence": 0.6,
+          "danceability": 0.6,
+          "tempo": 150.0
+        },
+        "seed_genres": [
+          "rock",
+          "work-out",
+          "hard-rock",
+          "heavy-metal"
+        ],
+        "decade": ""
+      },
+      "scores": {
+        "mood_match": 1,
+        "genre_recall": 1.0,
+        "genre_jaccard": 1.0,
+        "locale_match": 1,
+        "strict_match": 1
+      },
+      "used_llm": true
+    },
+    {
+      "prompt": "jazz coffee shop afternoon",
+      "expected": {
+        "mood": "calm",
+        "genre": [
+          "jazz"
+        ],
+        "locale": "",
+        "strict_locale": false
+      },
+      "actual": {
+        "mood": "relaxed",
+        "activity": "studying",
+        "genre": [
+          "jazz"
+        ],
+        "energy": "low",
+        "language": "en",
+        "locale": "",
+        "strict_locale": false,
+        "confidence": 0.7749999999999999,
+        "target_audio": {
+          "energy": 0.3,
+          "valence": 0.5,
+          "danceability": 0.3,
+          "acousticness": 0.7,
+          "instrumentalness": 0.6,
+          "tempo": 85.0
+        },
+        "seed_genres": [
+          "jazz",
+          "chill",
+          "study"
+        ],
+        "decade": ""
+      },
+      "scores": {
+        "mood_match": 0,
+        "genre_recall": 1.0,
+        "genre_jaccard": 1.0,
+        "locale_match": 1,
+        "strict_match": 1
+      },
+      "used_llm": true
+    },
+    {
+      "prompt": "classical klasik fokus deep work",
+      "expected": {
+        "mood": "focus",
+        "genre": [
+          "classical"
+        ],
+        "locale": "",
+        "strict_locale": false
+      },
+      "actual": {
+        "mood": "focused",
+        "activity": "work",
+        "genre": [
+          "classical"
+        ],
+        "energy": "low",
+        "language": "id",
+        "locale": "",
+        "strict_locale": false,
+        "confidence": 0.7749999999999999,
+        "target_audio": {
+          "energy": 0.2,
+          "valence": 0.4,
+          "danceability": 0.1,
+          "acousticness": 0.9,
+          "instrumentalness": 0.9,
+          "tempo": 70.0
+        },
+        "seed_genres": [
+          "classical",
+          "study"
+        ],
+        "decade": ""
+      },
+      "scores": {
+        "mood_match": 0,
+        "genre_recall": 1.0,
+        "genre_jaccard": 1.0,
+        "locale_match": 1,
+        "strict_match": 1
+      },
+      "used_llm": true
+    },
+    {
+      "prompt": "lagu lari pagi semangat",
+      "expected": {
+        "mood": "energetic",
+        "genre": [],
+        "locale": "",
+        "strict_locale": false
+      },
+      "actual": {
+        "mood": "energetic",
+        "activity": "workout",
+        "genre": [
+          "pop",
+          "electronic"
+        ],
+        "energy": "high",
+        "language": "id",
+        "locale": "indonesia",
+        "strict_locale": false,
+        "confidence": 0.675,
+        "target_audio": {
+          "energy": 0.85,
+          "valence": 0.7,
+          "danceability": 0.8,
+          "tempo": 130.0
+        },
+        "seed_genres": [
+          "work-out",
+          "electronic",
+          "pop"
+        ],
+        "decade": ""
+      },
+      "scores": {
+        "mood_match": 1,
+        "genre_recall": 1.0,
+        "genre_jaccard": 0.0,
+        "locale_match": 0,
+        "strict_match": 1
+      },
+      "used_llm": true
+    },
+    {
+      "prompt": "songs to fall asleep slowly",
+      "expected": {
+        "mood": "calm",
+        "genre": [],
+        "locale": "",
+        "strict_locale": false
+      },
+      "actual": {
+        "mood": "calm",
+        "activity": "sleep",
+        "genre": [
+          "ambient",
+          "lo-fi",
+          "classical"
+        ],
+        "energy": "low",
+        "language": "en",
+        "locale": "",
+        "strict_locale": false,
+        "confidence": 0.675,
+        "target_audio": {
+          "energy": 0.1,
+          "valence": 0.3,
+          "danceability": 0.1,
+          "acousticness": 0.8,
+          "instrumentalness": 0.7,
+          "tempo": 60.0
+        },
+        "seed_genres": [
+          "ambient",
+          "chill",
+          "classical",
+          "acoustic",
+          "study"
+        ],
+        "decade": ""
+      },
+      "scores": {
+        "mood_match": 1,
+        "genre_recall": 1.0,
+        "genre_jaccard": 0.0,
+        "locale_match": 1,
+        "strict_match": 1
+      },
+      "used_llm": true
+    },
+    {
+      "prompt": "lagu kerja deep work tenang",
+      "expected": {
+        "mood": "focus",
+        "genre": [],
+        "locale": "",
+        "strict_locale": false
+      },
+      "actual": {
+        "mood": "focused",
+        "activity": "work",
+        "genre": [
+          "ambient",
+          "lo-fi",
+          "instrumental"
+        ],
+        "energy": "low",
+        "language": "id",
+        "locale": "",
+        "strict_locale": false,
+        "confidence": 0.675,
+        "target_audio": {
+          "energy": 0.2,
+          "valence": 0.4,
+          "danceability": 0.2,
+          "acousticness": 0.5,
+          "instrumentalness": 0.9,
+          "tempo": 70.0
+        },
+        "seed_genres": [
+          "study",
+          "ambient",
+          "chill"
+        ],
+        "decade": ""
+      },
+      "scores": {
+        "mood_match": 0,
+        "genre_recall": 1.0,
+        "genre_jaccard": 0.0,
+        "locale_match": 1,
+        "strict_match": 1
+      },
+      "used_llm": true
+    },
+    {
+      "prompt": "study session focus instrumental",
+      "expected": {
+        "mood": "focus",
+        "genre": [],
+        "locale": "",
+        "strict_locale": false
+      },
+      "actual": {
+        "mood": "focused",
+        "activity": "study",
+        "genre": [
+          "instrumental",
+          "ambient",
+          "lo-fi"
+        ],
+        "energy": "low",
+        "language": "en",
+        "locale": "",
+        "strict_locale": false,
+        "confidence": 0.675,
+        "target_audio": {
+          "energy": 0.3,
+          "valence": 0.4,
+          "instrumentalness": 0.9,
+          "tempo": 80.0,
+          "acousticness": 0.5
+        },
+        "seed_genres": [
+          "study",
+          "ambient",
+          "classical",
+          "electronic",
+          "chill"
+        ],
+        "decade": ""
+      },
+      "scores": {
+        "mood_match": 0,
+        "genre_recall": 1.0,
+        "genre_jaccard": 0.0,
+        "locale_match": 1,
+        "strict_match": 1
+      },
+      "used_llm": true
+    },
+    {
+      "prompt": "lofi hip hop chill vibes",
+      "expected": {
+        "mood": "calm",
+        "genre": [
+          "lo-fi"
+        ],
+        "locale": "",
+        "strict_locale": false
+      },
+      "actual": {
+        "mood": "relaxed",
+        "activity": "studying",
+        "genre": [
+          "lo-fi",
+          "hip-hop"
+        ],
+        "energy": "low",
+        "language": "en",
+        "locale": "",
+        "strict_locale": false,
+        "confidence": 0.7749999999999999,
+        "target_audio": {
+          "energy": 0.3,
+          "valence": 0.4,
+          "danceability": 0.4,
+          "acousticness": 0.5,
+          "instrumentalness": 0.8,
+          "tempo": 85.0
+        },
+        "seed_genres": [
+          "chill",
+          "study",
+          "hip-hop"
+        ],
+        "decade": ""
+      },
+      "scores": {
+        "mood_match": 0,
+        "genre_recall": 1.0,
+        "genre_jaccard": 0.5,
+        "locale_match": 1,
+        "strict_match": 1
+      },
+      "used_llm": true
+    },
+    {
+      "prompt": "lagu mandailing acoustic",
+      "expected": {
+        "mood": "neutral",
+        "genre": [
+          "batak"
+        ],
+        "locale": "",
+        "strict_locale": false
+      },
+      "actual": {
+        "mood": "neutral",
+        "activity": "listening",
+        "genre": [
+          "batak",
+          "mandailing",
+          "acoustic"
+        ],
+        "energy": "low",
+        "language": "id",
+        "locale": "indonesia",
+        "strict_locale": false,
+        "confidence": 0.75,
+        "target_audio": {
+          "energy": 0.3,
+          "valence": 0.4,
+          "acousticness": 0.8,
+          "tempo": 85.0
+        },
+        "seed_genres": [
+          "acoustic",
+          "world-music"
+        ],
+        "decade": ""
+      },
+      "scores": {
+        "mood_match": 1,
+        "genre_recall": 1.0,
+        "genre_jaccard": 0.333,
+        "locale_match": 0,
+        "strict_match": 1
+      },
+      "used_llm": true
+    },
+    {
+      "prompt": "keroncong jadul jawa tempo doeloe",
+      "expected": {
+        "mood": "neutral",
+        "genre": [
+          "jawa"
+        ],
+        "locale": "",
+        "strict_locale": false
+      },
+      "actual": {
+        "mood": "nostalgic",
+        "activity": "listening",
+        "genre": [
+          "jawa",
+          "keroncong"
+        ],
+        "energy": "low",
+        "language": "id",
+        "locale": "indonesia",
+        "strict_locale": true,
+        "confidence": 0.7749999999999999,
+        "target_audio": {
+          "energy": 0.3,
+          "valence": 0.5,
+          "acousticness": 0.8,
+          "tempo": 85.0
+        },
+        "seed_genres": [
+          "world-music"
+        ],
+        "decade": "1950s"
+      },
+      "scores": {
+        "mood_match": 0,
+        "genre_recall": 1.0,
+        "genre_jaccard": 0.5,
+        "locale_match": 0,
+        "strict_match": 0
+      },
+      "used_llm": true
+    },
+    {
+      "prompt": "lagu minangkabau bukittinggi",
+      "expected": {
+        "mood": "neutral",
+        "genre": [
+          "minang"
+        ],
+        "locale": "",
+        "strict_locale": false
+      },
+      "actual": {
+        "mood": "neutral",
+        "activity": "listening",
+        "genre": [
+          "minang"
+        ],
+        "energy": "medium",
+        "language": "id",
+        "locale": "indonesia",
+        "strict_locale": true,
+        "confidence": 0.7749999999999999,
+        "target_audio": {
+          "energy": 0.5,
+          "valence": 0.5,
+          "tempo": 100.0
+        },
+        "seed_genres": [
+          "world-music"
+        ],
+        "decade": ""
+      },
+      "scores": {
+        "mood_match": 1,
+        "genre_recall": 1.0,
+        "genre_jaccard": 1.0,
+        "locale_match": 0,
+        "strict_match": 0
+      },
+      "used_llm": true
+    },
+    {
+      "prompt": "fun ceria pesta",
+      "expected": {
+        "mood": "happy",
+        "genre": [],
+        "locale": "",
+        "strict_locale": false
+      },
+      "actual": {
+        "mood": "happy",
+        "activity": "party",
+        "genre": [
+          "pop",
+          "dance"
+        ],
+        "energy": "high",
+        "language": "id",
+        "locale": "",
+        "strict_locale": false,
+        "confidence": 0.675,
+        "target_audio": {
+          "energy": 0.9,
+          "valence": 0.9,
+          "danceability": 0.9,
+          "tempo": 128.0
+        },
+        "seed_genres": [
+          "pop",
+          "dance",
+          "party"
+        ],
+        "decade": ""
+      },
+      "scores": {
+        "mood_match": 1,
+        "genre_recall": 1.0,
+        "genre_jaccard": 0.0,
+        "locale_match": 1,
+        "strict_match": 1
+      },
+      "used_llm": true
+    },
+    {
+      "prompt": "melancholy rainy night",
+      "expected": {
+        "mood": "sad",
+        "genre": [],
+        "locale": "",
+        "strict_locale": false
+      },
+      "actual": {
+        "mood": "melancholy",
+        "activity": "relaxing",
+        "genre": [
+          "ambient",
+          "lo-fi",
+          "acoustic"
+        ],
+        "energy": "low",
+        "language": "en",
+        "locale": "",
+        "strict_locale": false,
+        "confidence": 0.675,
+        "target_audio": {
+          "energy": 0.2,
+          "valence": 0.2,
+          "danceability": 0.2,
+          "acousticness": 0.8,
+          "instrumentalness": 0.5,
+          "tempo": 70.0
+        },
+        "seed_genres": [
+          "ambient",
+          "sad",
+          "acoustic",
+          "chill",
+          "study"
+        ],
+        "decade": ""
+      },
+      "scores": {
+        "mood_match": 0,
+        "genre_recall": 1.0,
+        "genre_jaccard": 0.0,
+        "locale_match": 1,
+        "strict_match": 1
+      },
+      "used_llm": true
+    },
+    {
+      "prompt": "healing chill santai",
+      "expected": {
+        "mood": "calm",
+        "genre": [],
+        "locale": "",
+        "strict_locale": false
+      },
+      "actual": {
+        "mood": "relaxed",
+        "activity": "relaxing",
+        "genre": [
+          "chill",
+          "lo-fi",
+          "acoustic"
+        ],
+        "energy": "low",
+        "language": "id",
+        "locale": "",
+        "strict_locale": false,
+        "confidence": 0.675,
+        "target_audio": {
+          "energy": 0.3,
+          "valence": 0.5,
+          "danceability": 0.3,
+          "acousticness": 0.7,
+          "tempo": 85.0
+        },
+        "seed_genres": [
+          "chill",
+          "acoustic",
+          "ambient",
+          "study"
+        ],
+        "decade": ""
+      },
+      "scores": {
+        "mood_match": 0,
+        "genre_recall": 1.0,
+        "genre_jaccard": 0.0,
+        "locale_match": 1,
+        "strict_match": 1
+      },
+      "used_llm": true
+    },
+    {
+      "prompt": "deep work ambient electronic",
+      "expected": {
+        "mood": "focus",
+        "genre": [
+          "ambient"
+        ],
+        "locale": "",
+        "strict_locale": false
+      },
+      "actual": {
+        "mood": "focused",
+        "activity": "work",
+        "genre": [
+          "ambient",
+          "electronic"
+        ],
+        "energy": "low",
+        "language": "en",
+        "locale": "",
+        "strict_locale": false,
+        "confidence": 0.7749999999999999,
+        "target_audio": {
+          "energy": 0.3,
+          "valence": 0.4,
+          "danceability": 0.2,
+          "acousticness": 0.1,
+          "instrumentalness": 0.9,
+          "tempo": 90.0
+        },
+        "seed_genres": [
+          "ambient",
+          "electronic",
+          "study",
+          "chill"
+        ],
+        "decade": ""
+      },
+      "scores": {
+        "mood_match": 0,
+        "genre_recall": 1.0,
+        "genre_jaccard": 0.5,
+        "locale_match": 1,
+        "strict_match": 1
+      },
+      "used_llm": true
+    },
+    {
+      "prompt": "lagu indonesia nusantara warga negara",
+      "expected": {
+        "mood": "neutral",
+        "genre": [],
+        "locale": "indonesia",
+        "strict_locale": false
+      },
+      "actual": {
+        "mood": "neutral",
+        "activity": "listening",
+        "genre": [
+          "indonesian-pop",
+          "folk"
+        ],
+        "energy": "medium",
+        "language": "id",
+        "locale": "indonesia",
+        "strict_locale": true,
+        "confidence": 0.675,
+        "target_audio": {
+          "energy": 0.5,
+          "valence": 0.6,
+          "tempo": 100.0
+        },
+        "seed_genres": [
+          "world-music",
+          "pop"
+        ],
+        "decade": ""
+      },
+      "scores": {
+        "mood_match": 1,
+        "genre_recall": 1.0,
+        "genre_jaccard": 0.0,
+        "locale_match": 1,
+        "strict_match": 0
+      },
+      "used_llm": true
+    },
+    {
+      "prompt": "national anthem nkri patriotic",
+      "expected": {
+        "mood": "happy",
+        "genre": [],
+        "locale": "indonesia",
+        "strict_locale": true
+      },
+      "actual": {
+        "mood": "patriotic",
+        "activity": "listening",
+        "genre": [
+          "national",
+          "patriotic"
+        ],
+        "energy": "high",
+        "language": "id",
+        "locale": "indonesia",
+        "strict_locale": true,
+        "confidence": 0.7,
+        "target_audio": {
+          "energy": 0.8,
+          "valence": 0.7,
+          "tempo": 120.0
+        },
+        "seed_genres": [
+          "world-music",
+          "pop"
+        ],
+        "decade": ""
+      },
+      "scores": {
+        "mood_match": 0,
+        "genre_recall": 1.0,
+        "genre_jaccard": 0.0,
+        "locale_match": 1,
+        "strict_match": 1
+      },
+      "used_llm": true
+    },
+    {
+      "prompt": "indie band malam minggu",
+      "expected": {
+        "mood": "neutral",
+        "genre": [
+          "indie"
+        ],
+        "locale": "",
+        "strict_locale": false
+      },
+      "actual": {
+        "mood": "relaxed",
+        "activity": "listening",
+        "genre": [
+          "indie"
+        ],
+        "energy": "medium",
+        "language": "id",
+        "locale": "indonesia",
+        "strict_locale": false,
+        "confidence": 0.75,
+        "target_audio": {
+          "energy": 0.5,
+          "valence": 0.6,
+          "tempo": 110.0,
+          "danceability": 0.5
+        },
+        "seed_genres": [
+          "indie",
+          "indie-pop"
+        ],
+        "decade": ""
+      },
+      "scores": {
+        "mood_match": 0,
+        "genre_recall": 1.0,
+        "genre_jaccard": 1.0,
+        "locale_match": 0,
+        "strict_match": 1
+      },
+      "used_llm": true
+    },
+    {
+      "prompt": "lagu pop hits viral",
+      "expected": {
+        "mood": "neutral",
+        "genre": [
+          "pop"
+        ],
+        "locale": "",
+        "strict_locale": false
+      },
+      "actual": {
+        "mood": "happy",
+        "activity": "listening",
+        "genre": [
+          "pop"
+        ],
+        "energy": "high",
+        "language": "id",
+        "locale": "indonesia",
+        "strict_locale": false,
+        "confidence": 0.7749999999999999,
+        "target_audio": {
+          "energy": 0.8,
+          "valence": 0.7,
+          "danceability": 0.8,
+          "tempo": 120.0
+        },
+        "seed_genres": [
+          "pop"
+        ],
+        "decade": "2020s"
+      },
+      "scores": {
+        "mood_match": 0,
+        "genre_recall": 1.0,
+        "genre_jaccard": 1.0,
+        "locale_match": 0,
+        "strict_match": 1
+      },
+      "used_llm": true
+    },
+    {
+      "prompt": "jazz dinner romantic",
+      "expected": {
+        "mood": "calm",
+        "genre": [
+          "jazz"
+        ],
+        "locale": "",
+        "strict_locale": false
+      },
+      "actual": {
+        "mood": "romantic",
+        "activity": "dinner",
+        "genre": [
+          "jazz"
+        ],
+        "energy": "low",
+        "language": "en",
+        "locale": "",
+        "strict_locale": false,
+        "confidence": 0.7749999999999999,
+        "target_audio": {
+          "energy": 0.3,
+          "valence": 0.5,
+          "danceability": 0.3,
+          "acousticness": 0.7,
+          "tempo": 80.0
+        },
+        "seed_genres": [
+          "jazz",
+          "chill",
+          "acoustic"
+        ],
+        "decade": ""
+      },
+      "scores": {
+        "mood_match": 0,
+        "genre_recall": 1.0,
+        "genre_jaccard": 1.0,
+        "locale_match": 1,
+        "strict_match": 1
+      },
+      "used_llm": true
+    },
+    {
+      "prompt": "rock alternative 2000s",
+      "expected": {
+        "mood": "energetic",
+        "genre": [
+          "rock"
+        ],
+        "locale": "",
+        "strict_locale": false
+      },
+      "actual": {
+        "mood": "neutral",
+        "activity": "listening",
+        "genre": [
+          "rock",
+          "alternative"
+        ],
+        "energy": "high",
+        "language": "en",
+        "locale": "",
+        "strict_locale": false,
+        "confidence": 0.7749999999999999,
+        "target_audio": {
+          "energy": 0.8,
+          "valence": 0.5,
+          "tempo": 120.0,
+          "danceability": 0.5
+        },
+        "seed_genres": [
+          "rock",
+          "alternative"
+        ],
+        "decade": "2000s"
+      },
+      "scores": {
+        "mood_match": 0,
+        "genre_recall": 1.0,
+        "genre_jaccard": 0.5,
+        "locale_match": 1,
+        "strict_match": 1
+      },
+      "used_llm": true
+    },
+    {
+      "prompt": "tenang ambient drone",
+      "expected": {
+        "mood": "calm",
+        "genre": [
+          "ambient"
+        ],
+        "locale": "",
+        "strict_locale": false
+      },
+      "actual": {
+        "mood": "calm",
+        "activity": "relaxing",
+        "genre": [
+          "ambient",
+          "drone"
+        ],
+        "energy": "low",
+        "language": "en",
+        "locale": "",
+        "strict_locale": false,
+        "confidence": 0.7749999999999999,
+        "target_audio": {
+          "energy": 0.1,
+          "valence": 0.4,
+          "danceability": 0.1,
+          "acousticness": 0.3,
+          "instrumentalness": 0.9,
+          "tempo": 60.0
+        },
+        "seed_genres": [
+          "ambient",
+          "chill"
+        ],
+        "decade": ""
+      },
+      "scores": {
+        "mood_match": 1,
+        "genre_recall": 1.0,
+        "genre_jaccard": 0.5,
+        "locale_match": 1,
+        "strict_match": 1
+      },
+      "used_llm": true
+    },
+    {
+      "prompt": "boost energy gym pre-workout",
+      "expected": {
+        "mood": "energetic",
+        "genre": [],
+        "locale": "",
+        "strict_locale": false
+      },
+      "actual": {
+        "mood": "energetic",
+        "activity": "workout",
+        "genre": [
+          "electronic",
+          "hip-hop",
+          "pop"
+        ],
+        "energy": "high",
+        "language": "en",
+        "locale": "",
+        "strict_locale": false,
+        "confidence": 0.675,
+        "target_audio": {
+          "energy": 0.9,
+          "valence": 0.7,
+          "danceability": 0.8,
+          "tempo": 135.0
+        },
+        "seed_genres": [
+          "work-out",
+          "electronic",
+          "hip-hop",
+          "pop"
+        ],
+        "decade": ""
+      },
+      "scores": {
+        "mood_match": 1,
+        "genre_recall": 1.0,
+        "genre_jaccard": 0.0,
+        "locale_match": 1,
+        "strict_match": 1
+      },
+      "used_llm": true
+    },
+    {
+      "prompt": "lagu galau patah hati",
+      "expected": {
+        "mood": "sad",
+        "genre": [],
+        "locale": "",
+        "strict_locale": false
+      },
+      "actual": {
+        "mood": "sad",
+        "activity": "listening",
+        "genre": [
+          "pop",
+          "ballad"
+        ],
+        "energy": "low",
+        "language": "id",
+        "locale": "indonesia",
+        "strict_locale": false,
+        "confidence": 0.675,
+        "target_audio": {
+          "energy": 0.3,
+          "valence": 0.2,
+          "acousticness": 0.7,
+          "tempo": 75.0
+        },
+        "seed_genres": [
+          "sad",
+          "acoustic",
+          "pop"
+        ],
+        "decade": ""
+      },
+      "scores": {
+        "mood_match": 1,
+        "genre_recall": 1.0,
+        "genre_jaccard": 0.0,
+        "locale_match": 0,
+        "strict_match": 1
+      },
+      "used_llm": true
+    },
+    {
+      "prompt": "happy birthday party fun ceria",
+      "expected": {
+        "mood": "happy",
+        "genre": [],
+        "locale": "",
+        "strict_locale": false
+      },
+      "actual": {
+        "mood": "happy",
+        "activity": "party",
+        "genre": [
+          "pop",
+          "dance"
+        ],
+        "energy": "high",
+        "language": "id",
+        "locale": "",
+        "strict_locale": false,
+        "confidence": 0.675,
+        "target_audio": {
+          "energy": 0.9,
+          "valence": 0.9,
+          "danceability": 0.85,
+          "tempo": 125.0
+        },
+        "seed_genres": [
+          "pop",
+          "dance",
+          "party"
+        ],
+        "decade": ""
+      },
+      "scores": {
+        "mood_match": 1,
+        "genre_recall": 1.0,
+        "genre_jaccard": 0.0,
+        "locale_match": 1,
+        "strict_match": 1
+      },
+      "used_llm": true
+    },
+    {
+      "prompt": "classical piano focus",
+      "expected": {
+        "mood": "focus",
+        "genre": [
+          "classical"
+        ],
+        "locale": "",
+        "strict_locale": false
+      },
+      "actual": {
+        "mood": "focused",
+        "activity": "study",
+        "genre": [
+          "classical",
+          "piano"
+        ],
+        "energy": "low",
+        "language": "en",
+        "locale": "",
+        "strict_locale": false,
+        "confidence": 0.7749999999999999,
+        "target_audio": {
+          "energy": 0.2,
+          "valence": 0.4,
+          "danceability": 0.1,
+          "acousticness": 0.9,
+          "instrumentalness": 0.9,
+          "tempo": 70.0
+        },
+        "seed_genres": [
+          "classical",
+          "study",
+          "ambient"
+        ],
+        "decade": ""
+      },
+      "scores": {
+        "mood_match": 0,
+        "genre_recall": 1.0,
+        "genre_jaccard": 0.5,
+        "locale_match": 1,
+        "strict_match": 1
+      },
+      "used_llm": true
+    },
+    {
+      "prompt": "lagu dangdut koplo joget",
+      "expected": {
+        "mood": "neutral",
+        "genre": [
+          "jawa"
+        ],
+        "locale": "",
+        "strict_locale": false
+      },
+      "actual": {
+        "mood": "energetic",
+        "activity": "dancing",
+        "genre": [
+          "jawa",
+          "dangdut",
+          "koplo"
+        ],
+        "energy": "high",
+        "language": "id",
+        "locale": "indonesia",
+        "strict_locale": true,
+        "confidence": 0.79,
+        "target_audio": {
+          "energy": 0.85,
+          "valence": 0.8,
+          "danceability": 0.9,
+          "tempo": 130.0
+        },
+        "seed_genres": [
+          "world-music"
+        ],
+        "decade": ""
+      },
+      "scores": {
+        "mood_match": 0,
+        "genre_recall": 1.0,
+        "genre_jaccard": 0.333,
+        "locale_match": 0,
+        "strict_match": 0
+      },
+      "used_llm": true
+    }
+  ]
+}

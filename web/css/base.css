@@ -1,0 +1,77 @@
+@layer base {
+  body {
+    background: var(--canvas);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: var(--fs-body);
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    inset: -10% -10% auto -10%;
+    height: 60vh;
+    background:
+      radial-gradient(60% 100% at 80% 0%, rgba(255, 91, 58, 0.18), transparent 60%),
+      radial-gradient(50% 80% at 10% 0%, rgba(121, 194, 164, 0.10), transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(to right, rgba(246, 241, 232, 0.04) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(246, 241, 232, 0.03) 1px, transparent 1px);
+    background-size: 96px 96px;
+    background-position: 0 0;
+    mask-image: linear-gradient(to bottom, black 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.6;
+  }
+
+  .app-shell {
+    position: relative;
+    z-index: 1;
+    max-width: var(--max-content);
+    margin-inline: auto;
+    padding: var(--space-5) var(--gutter) var(--space-9);
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 12px; height: 12px; }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(246, 241, 232, 0.16);
+    border-radius: var(--radius-pill);
+    border: 3px solid var(--canvas);
+  }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(246, 241, 232, 0.28); }
+  ::-webkit-scrollbar-track { background: transparent; }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  body.modal-open { overflow: hidden; }
+
+  /* Reduce body decorations on small screens to keep paint light. */
+  @media (max-width: 640px) {
+    body::before { height: 40vh; }
+    body::after { background-size: 64px 64px; opacity: 0.4; }
+  }
+
+  /* Prevent iOS Safari from auto-zooming on focus by enforcing 16px on inputs */
+  @media (max-width: 640px) {
+    .input, .textarea, .refine__input { font-size: max(16px, var(--fs-body)); }
+  }
+}

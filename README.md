@@ -4,7 +4,7 @@
   <p><strong>Multi-Agent Music Discovery Assistant for Spotify</strong></p>
 
   <p>
-    <img alt="Python" src="https://img.shields.io/badge/Python-3.9%2B-306998?style=for-the-badge&logo=python&logoColor=white" />
+    <img alt="Python" src="https://img.shields.io/badge/Python-3.10%2B-306998?style=for-the-badge&logo=python&logoColor=white" />
     <img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-0F766E?style=for-the-badge&logo=fastapi&logoColor=white" />
     <img alt="Spotify API" src="https://img.shields.io/badge/Spotify_API-1DB954?style=for-the-badge&logo=spotify&logoColor=white" />
     <img alt="OpenRouter" src="https://img.shields.io/badge/OpenRouter-LLM-111827?style=for-the-badge" />
@@ -29,35 +29,59 @@ SmartDiscover is a 4-agent AI music recommendation system. Instead of relying on
 | Preview-aware retrieval | Better chance to get playable 30s previews |
 | Playlist-ready output | Recommendations can be executed immediately |
 
-## 4-Agent Architecture
+## Agentic Architecture
 
 ```mermaid
 flowchart TD
-  A[User Prompt] --> B[1. Profiler Agent\nExtract mood, activity, preferences]
-  B --> C[2. Spotify Search Agent\nRetrieve candidate tracks from Spotify]
-  C --> D[3. Filter and Ranker Agent\nScore relevance, deduplicate, rank results]
-  D --> E[4. Presenter Agent\nFormat output for easy execution]
+  A[User Prompt] --> B[1. Profiler Agent<br/>hybrid: heuristic + LLM<br/>JSON-mode + few-shot]
+  B --> C[2. Spotify Discovery Agent<br/>recommendations + search<br/>+ audio features + artist genres]
+  C --> O{AGENT_LOOP_ENABLED?}
+  O -- yes --> L[Orchestrator Agent<br/>tool-use loop max 3 iter:<br/>request_more_candidates,<br/>filter_by_audio,<br/>request_audio_features,<br/>finalize]
+  O -- no --> D
+  L --> D[3. Ranker Agent<br/>rich context: audio + genres<br/>min-output guard<br/>artist diversity]
+  D --> E[4. Presenter Agent<br/>LLM-generated 'why' per track<br/>or template fallback]
+  E --> F[/recommend response]
+  F -. user types 'lebih upbeat' .-> R[/refine endpoint<br/>stateless re-profile + re-rank/]
+  R --> F
 ```
 
 ### 1. Profiler Agent
 
-- Converts natural language input into structured parameters.
-- Example parameters: mood, activity, energy level, style preference.
+- Hybrid: heuristic detector runs first (high precision for Indonesian genres), LLM extracts richer signals.
+- Outputs `IntentProfile`: mood, activity, genre, energy, language, locale, strict_locale, **confidence**, **target_audio** (numeric audio targets), **seed_genres** (Spotify-canonical), decade.
+- LLM call uses `response_format=json_object` + 4 few-shot examples; low-confidence results trigger one retry.
+- Heuristic genre & locale findings are merged with LLM output (heuristic acts as floor; LLM cannot drop them).
 
-### 2. Spotify Search Agent
+### 2. Spotify Discovery Agent
 
-- Uses adaptive queries to retrieve candidate tracks.
-- Focuses on candidate diversity to avoid repetitive results.
+- Tries `GET /v1/recommendations` first when `seed_genres` resolve against `available-genre-seeds`.
+- Supplements with playlist + adaptive search when shortfall.
+- Enriches every candidate with `GET /v1/audio-features` (tempo, energy, valence, danceability, acousticness, instrumentalness, loudness) and `GET /v1/artists` (artist genres) — all batched and parallel.
+- Dynamic `market` derived from intent locale.
 
-### 3. Filter and Ranker Agent
+### 3. Orchestrator Agent (opt-in)
 
-- Evaluates candidate relevance based on prompt context.
-- Produces a prioritized list of the best tracks.
+- Activated when `AGENT_LOOP_ENABLED=true`.
+- Tool-use loop via OpenRouter function calling: `request_more_candidates`, `filter_by_audio`, `request_audio_features`, `finalize`.
+- Hard limits: 3 iterations, 30s wall, automatic fallback on failure.
 
-### 4. Presenter Agent
+### 4. Ranker Agent
 
-- Delivers final results in a concise, actionable format.
-- Ready to continue into playlist creation flow.
+- Sends LLM **rich context**: audio features + artist genres per candidate (no longer guesses from track name).
+- **Min-output guard**: if LLM ranks fewer than `top_k`, fills from heuristic-scored remainder.
+- **Artist diversity**: max 2 tracks per artist when alternatives exist.
+- Heuristic fallback uses Euclidean distance between candidate audio features and `profile.target_audio`.
+
+### 5. Presenter Agent
+
+- Generates a unique `why` sentence per track in **one** batched LLM call when the ranker did not supply reasons.
+- Language-aware (id / en).
+- Falls back to deterministic template when LLM is disabled.
+
+### 6. `/refine` (multi-turn)
+
+- Stateless: client posts `{previous_profile, previous_track_ids, refinement_text}`.
+- Pipeline merges previous intent + refinement, re-runs Spotify discovery + ranker, excludes already-seen track ids.
 
 ---
 
@@ -104,6 +128,21 @@ OPENROUTER_BASE_URL="https://openrouter.ai/api/v1"
 SPOTIFY_CLIENT_ID="your-spotify-client-id"
 SPOTIFY_CLIENT_SECRET="your-spotify-client-secret"
 SPOTIFY_REDIRECT_URI=""
+SPOTIFY_DEFAULT_MARKET="ID"
+
+# Required in production. Long random string (>=32 chars).
+SESSION_SECRET=""
+# Salt used to hash client IPs before persisting analytics.
+IP_HASH_SALT=""
+
+# Rate limits (slowapi syntax).
+RATE_LIMIT_RECOMMEND="10/minute"
+RATE_LIMIT_SUGGESTIONS="30/minute"
+
+# Public base URL of this app (used for OpenRouter HTTP-Referer).
+APP_PUBLIC_URL="http://localhost:8000"
+# Set to true behind HTTPS in production.
+COOKIE_SECURE="false"
 ```
 
 You can switch the LLM model at runtime via `OPENROUTER_MODEL` (for example `openai/gpt-4o-mini`, `anthropic/claude-3.5-sonnet`, or any model available in your OpenRouter account).
@@ -115,6 +154,38 @@ https://smart-discover.vercel.app/callback
 ```
 
 Important: Spotify requires an exact match (scheme, domain, and path).
+
+### Environment variables reference
+
+| Variable | Required | Default | Purpose |
+|---|---|---|---|
+| `OPENROUTER_API_KEY` | yes (LLM mode) | - | OpenRouter API key. If empty, app runs in heuristic-only fallback. |
+| `OPENROUTER_MODEL` | no | `google/gemini-2.5-flash-lite` | LLM model id. |
+| `OPENROUTER_BASE_URL` | no | `https://openrouter.ai/api/v1` | OpenRouter base URL. |
+| `SPOTIFY_CLIENT_ID` / `SPOTIFY_CLIENT_SECRET` | yes (real catalog) | - | Spotify Web API credentials. If empty, app uses mock candidates. |
+| `SPOTIFY_REDIRECT_URI` | prod | derived | Exact callback URL registered in Spotify Dashboard. |
+| `SPOTIFY_DEFAULT_MARKET` | no | `ID` | Spotify market code fallback. Auto-derived from intent locale when possible. |
+| `SESSION_SECRET` | **prod** | dev placeholder | Signs the HttpOnly OAuth session cookie. Use a long random string in production. |
+| `IP_HASH_SALT` | prod | dev placeholder | Salt used to SHA256-hash client IPs before storing analytics. |
+| `RATE_LIMIT_RECOMMEND` | no | `10/minute` | slowapi limit on `/recommend`. |
+| `RATE_LIMIT_SUGGESTIONS` | no | `30/minute` | slowapi limit on `/api/prompt-suggestions`. |
+| `APP_PUBLIC_URL` | no | `http://localhost:8000` | Public base URL; used as `HTTP-Referer` for OpenRouter. |
+| `COOKIE_SECURE` | prod | `false` | Set `true` when serving behind HTTPS. |
+| `SUPABASE_URL` / `SUPABASE_API_KEY` | no | - | Optional analytics destination for prompt logs. |
+| `AGENT_LOOP_ENABLED` | no | `false` | Enable orchestrator tool-use loop (extra LLM calls). |
+| `AGENT_LOOP_MAX_ITERATIONS` | no | `3` | Hard limit for orchestrator iterations. |
+| `AGENT_LOOP_TIMEOUT_S` | no | `30.0` | Wall-clock budget for the orchestrator. |
+| `EVAL_PASS_THRESHOLD` | no | `0.7` | Pass threshold used by `evals/run_eval.py` exit code. |
+
+### Privacy disclosure
+
+When Supabase is configured, each `/recommend` request persists:
+
+- The prompt text and target count.
+- A SHA256 hash of the client IP (salted with `IP_HASH_SALT`, **not reversible**).
+- The User-Agent header.
+
+No Spotify account data is ever stored. The Spotify access token lives only in an HttpOnly, signed session cookie scoped to your browser; it never reaches `localStorage` or analytics.
 
 ### 4) Run the Application
 
@@ -179,6 +250,32 @@ Notes:
 ## Fallback Mode
 
 If Spotify credentials are missing or invalid, the application still runs in fallback mode so the interface can be demonstrated.
+
+## API Endpoints
+
+| Method | Path | Description |
+|---|---|---|
+| `GET`  | `/health` | Liveness check. |
+| `GET`  | `/spotify/health` | Spotify reachability. |
+| `GET`  | `/llm/health` | OpenRouter reachability. |
+| `POST` | `/recommend` | Run the full pipeline. Body: `{text, target_count?}`. |
+| `POST` | `/refine` | Multi-turn refine. Body: `{previous_profile, previous_track_ids, refinement_text, target_count?}`. |
+| `GET`  | `/api/prompt-suggestions?q=` | Recent-prompt autocomplete (rate-limited). |
+| `GET`  | `/auth/login` → `/auth/callback` | Spotify OAuth (HttpOnly cookie session, CSRF-protected). |
+| `GET`  | `/auth/status` | Returns `{connected, expires_at}`. |
+| `POST` | `/auth/logout` | Clears the session cookie. |
+| `POST` | `/create-playlist` | Saves the current selection as a Spotify playlist (requires session cookie). |
+
+## Eval harness
+
+Offline regression for the Profiler agent.
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+python -m evals.run_eval
+```
+
+Outputs aggregate metrics (`mood_match`, `genre_recall`, `genre_jaccard`, `locale_match`, `strict_locale_match`, `overall`) and saves a per-prompt JSON to `evals/results/`. Exits `0` if `overall ≥ EVAL_PASS_THRESHOLD`. Edit `evals/golden_prompts.json` to update the gold set.
 
 ## Tech Stack
 

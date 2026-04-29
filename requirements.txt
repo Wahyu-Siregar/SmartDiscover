@@ -4,4 +4,9 @@ httpx==0.28.1
 pydantic==2.11.7
 pydantic-settings==2.10.1
 python-dotenv==1.1.1
+slowapi==0.1.9
+itsdangerous==2.2.0
+tenacity==9.0.0
+
+# dev
 pytest==8.4.1

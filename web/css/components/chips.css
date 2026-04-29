@@ -1,0 +1,50 @@
+@layer components {
+  .audio-chips {
+    display: flex; gap: var(--space-2); flex-wrap: wrap;
+    align-items: center;
+  }
+  .audio-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px;
+    border-radius: var(--radius-pill);
+    background: rgba(22, 22, 22, 0.06);
+    border: 1px solid rgba(22, 22, 22, 0.08);
+    font-family: var(--font-mono);
+    font-size: var(--fs-eyebrow);
+    color: var(--surface-ink);
+    letter-spacing: 0.04em;
+  }
+  .audio-chip__icon {
+    font-size: 0.95rem;
+    line-height: 1;
+  }
+  .audio-chip__bar {
+    width: 36px;
+    height: 4px;
+    background: rgba(22, 22, 22, 0.12);
+    border-radius: var(--radius-pill);
+    overflow: hidden;
+  }
+  .audio-chip__bar-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: var(--radius-pill);
+  }
+  .audio-chip--energy { color: var(--accent-ink); }
+  .audio-chip--valence { color: var(--surface-ink); }
+  .audio-chip--tempo { color: var(--surface-ink); }
+
+  /* Genre tags below chips */
+  .track-card__genres {
+    display: inline-flex; gap: 4px; flex-wrap: wrap;
+  }
+  .genre-tag {
+    font-family: var(--font-mono);
+    font-size: var(--fs-eyebrow);
+    color: var(--surface-ink-muted);
+    text-transform: lowercase;
+    letter-spacing: 0.04em;
+    padding: 2px 6px;
+    border-bottom: 1px dotted var(--surface-ink-muted);
+  }
+}

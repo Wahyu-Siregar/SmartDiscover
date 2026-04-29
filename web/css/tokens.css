@@ -1,0 +1,82 @@
+/* SmartDiscover — Design Tokens (editorial) */
+@layer tokens {
+  :root {
+    /* Color */
+    --canvas: #0d0e10;
+    --canvas-soft: #15171b;
+    --canvas-elev: #1c1f24;
+    --surface: #f6f1e8;
+    --surface-warm: #efe6d4;
+    --surface-ink: #161616;
+    --surface-ink-muted: #4a4a4a;
+
+    --accent: #ff5b3a;
+    --accent-soft: #ffb19f;
+    --accent-ink: #2a0e07;
+
+    --ink: #f6f1e8;
+    --ink-strong: #ffffff;
+    --muted: rgba(246, 241, 232, 0.62);
+    --muted-strong: rgba(246, 241, 232, 0.82);
+    --rule: rgba(246, 241, 232, 0.12);
+    --rule-strong: rgba(246, 241, 232, 0.22);
+
+    --ok: #79c2a4;
+    --warn: #ffba6b;
+    --err: #ff7474;
+    --spotify: #1db954;
+
+    /* Typography */
+    --font-display: "Fraunces", "Cormorant Garamond", Georgia, serif;
+    --font-body: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+    --fs-display-1: clamp(2.6rem, 4vw + 1rem, 4.8rem);
+    --fs-display-2: clamp(2rem, 2.4vw + 1rem, 3rem);
+    --fs-headline: clamp(1.4rem, 1.2vw + 0.9rem, 1.8rem);
+    --fs-title: clamp(1.05rem, 0.4vw + 0.95rem, 1.15rem);
+    --fs-body: clamp(0.95rem, 0.2vw + 0.9rem, 1rem);
+    --fs-small: 0.8125rem;
+    --fs-eyebrow: 0.6875rem;
+
+    --lh-tight: 1.05;
+    --lh-snug: 1.25;
+    --lh-base: 1.55;
+
+    /* Spacing scale */
+    --space-1: 0.25rem;
+    --space-2: 0.5rem;
+    --space-3: 0.75rem;
+    --space-4: 1rem;
+    --space-5: 1.5rem;
+    --space-6: 2rem;
+    --space-7: 3rem;
+    --space-8: 4rem;
+    --space-9: 6rem;
+
+    /* Radii */
+    --radius-1: 4px;
+    --radius-2: 8px;
+    --radius-3: 14px;
+    --radius-4: 22px;
+    --radius-pill: 999px;
+
+    /* Shadow / elevation */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+    --shadow-md: 0 12px 32px -16px rgba(0, 0, 0, 0.55);
+    --shadow-lg: 0 30px 60px -28px rgba(0, 0, 0, 0.7);
+    --shadow-glow: 0 0 0 1px rgba(255, 91, 58, 0.18), 0 18px 38px -22px rgba(255, 91, 58, 0.45);
+
+    /* Motion */
+    --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+    --ease-soft: cubic-bezier(0.4, 0, 0.2, 1);
+    --dur-1: 120ms;
+    --dur-2: 220ms;
+    --dur-3: 360ms;
+    --dur-4: 600ms;
+
+    /* Layout */
+    --max-content: 1240px;
+    --gutter: clamp(1rem, 2vw + 0.5rem, 2.25rem);
+  }
+}

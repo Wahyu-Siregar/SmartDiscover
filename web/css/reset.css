@@ -1,0 +1,30 @@
+/* SmartDiscover — Modern reset (Andy Bell-inspired) */
+@layer reset {
+  *, *::before, *::after { box-sizing: border-box; }
+  * { margin: 0; padding: 0; }
+
+  html { -webkit-text-size-adjust: 100%; tab-size: 4; }
+  body {
+    min-height: 100vh;
+    line-height: var(--lh-base);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  img, picture, video, canvas, svg { display: block; max-width: 100%; }
+  input, button, textarea, select { font: inherit; color: inherit; }
+  button { background: none; border: 0; cursor: pointer; }
+  a { color: inherit; }
+  ul, ol { list-style: none; }
+  h1, h2, h3, h4, h5, h6 { font-weight: 500; line-height: var(--lh-snug); }
+  p { text-wrap: pretty; }
+
+  :where(input, textarea, button, [tabindex]):focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: var(--radius-2);
+  }
+
+  ::selection { background: var(--accent); color: var(--accent-ink); }
+}
