@@ -53,3 +53,29 @@ def test_diversity_relaxed_when_pool_is_homogeneous() -> None:
 
     # When there's no alternative, we must still return top_k results.
     assert len(ranked) == 4
+
+
+def test_lyric_signals_boost_matching_tracks() -> None:
+    llm = OpenRouterClient()
+    ranker = RankerAgent(llm)
+    matching = TrackCandidate(
+        title="Quiet Rindu",
+        artist="A",
+        popularity=20,
+        lyric_signals={
+            "themes": ["longing", "heartbreak"],
+            "sentiment": "sad",
+            "match_score": 0.95,
+        },
+    )
+    generic = TrackCandidate(title="Generic Hit", artist="B", popularity=80)
+
+    ranked = asyncio.run(
+        ranker.rank(
+            IntentProfile(mood="sad", energy="low", language="en"),
+            [generic, matching],
+            top_k=2,
+        )
+    )
+
+    assert ranked[0].title == "Quiet Rindu"

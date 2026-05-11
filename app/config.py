@@ -35,6 +35,10 @@ class Settings(BaseSettings):
     agent_loop_max_iterations: int = Field(default=3, validation_alias="AGENT_LOOP_MAX_ITERATIONS")
     agent_loop_timeout_s: float = Field(default=30.0, validation_alias="AGENT_LOOP_TIMEOUT_S")
     audio_feature_cache_ttl_s: int = Field(default=86400, validation_alias="AUDIO_FEATURE_CACHE_TTL_S")
+    genius_access_token: str = Field(default="", validation_alias="GENIUS_ACCESS_TOKEN")
+    genius_lyrics_enabled: bool = Field(default=False, validation_alias="GENIUS_LYRICS_ENABLED")
+    genius_lyrics_top_n: int = Field(default=10, validation_alias="GENIUS_LYRICS_TOP_N")
+    genius_lyrics_cache_ttl_s: int = Field(default=86400, validation_alias="GENIUS_LYRICS_CACHE_TTL_S")
     eval_pass_threshold: float = Field(default=0.7, validation_alias="EVAL_PASS_THRESHOLD")
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")

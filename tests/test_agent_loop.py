@@ -5,6 +5,7 @@ import asyncio
 
 from app.models import IntentProfile, TrackCandidate
 from app.services.agent_loop import AgenticOrchestrator
+from app.services.genius_client import GeniusClient
 from app.services.openrouter_client import OpenRouterClient
 from app.services.spotify_client import SpotifyClient
 
@@ -44,7 +45,8 @@ def _make_orchestrator(monkeypatch, llm_responses: list[dict]) -> AgenticOrchest
 
     monkeypatch.setattr(spotify, "get_audio_features", fake_audio, raising=False)
 
-    return AgenticOrchestrator(llm, spotify)
+    genius = GeniusClient()
+    return AgenticOrchestrator(llm, spotify, genius)
 
 
 def test_agent_loop_executes_finalize_and_returns_ordered_pool(monkeypatch) -> None:
@@ -93,3 +95,45 @@ def test_agent_loop_disabled_returns_none(monkeypatch) -> None:
         )
     )
     assert result is None
+
+
+def test_agent_loop_can_request_lyric_signals(monkeypatch) -> None:
+    candidates = [TrackCandidate(title="Rindu", artist="A", track_id="tid1")]
+    profile = IntentProfile(mood="sad", energy="low", language="id")
+
+    llm_responses = [
+        {
+            "tool_calls": [
+                {
+                    "id": "1",
+                    "function": {
+                        "name": "request_lyric_signals",
+                        "arguments": '{"track_ids": ["tid1"]}',
+                    },
+                },
+                {
+                    "id": "2",
+                    "function": {
+                        "name": "finalize",
+                        "arguments": '{"track_ids": ["tid1"]}',
+                    },
+                },
+            ]
+        },
+        {"content": "done", "tool_calls": []},
+    ]
+
+    orchestrator = _make_orchestrator(monkeypatch, llm_responses)
+
+    async def fake_enrich(profile, selected, *, limit=None):
+        selected[0].lyric_signals = {"themes": ["longing"], "sentiment": "sad", "match_score": 0.9}
+        return {"filled": 1, "lookups": 1}
+
+    monkeypatch.setattr(orchestrator.genius, "enrich_candidates", fake_enrich, raising=False)
+
+    result = asyncio.run(orchestrator.run(profile, candidates, target_count=1))
+
+    assert result is not None
+    refined, info = result
+    assert "request_lyric_signals" in info["tools_called"]
+    assert refined[0].lyric_signals["match_score"] == 0.9

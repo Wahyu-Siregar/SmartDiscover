@@ -12,6 +12,7 @@ from app.models import (
 )
 from app.services.agent_loop import AgenticOrchestrator
 from app.services.cache import TTLCache
+from app.services.genius_client import GeniusClient
 from app.services.openrouter_client import OpenRouterClient
 from app.services.presenter import PresenterAgent
 from app.services.profiler import ProfilerAgent
@@ -28,13 +29,15 @@ class RecommendationPipeline:
         *,
         llm: OpenRouterClient | None = None,
         spotify: SpotifyClient | None = None,
+        genius: GeniusClient | None = None,
     ) -> None:
         self.llm = llm or OpenRouterClient()
         self.profiler = ProfilerAgent(self.llm)
         self.spotify = spotify or SpotifyClient()
+        self.genius = genius or GeniusClient()
         self.ranker = RankerAgent(self.llm)
         self.presenter = PresenterAgent(self.llm)
-        self.orchestrator = AgenticOrchestrator(self.llm, self.spotify)
+        self.orchestrator = AgenticOrchestrator(self.llm, self.spotify, self.genius)
         self._profile_cache: TTLCache[IntentProfile] = TTLCache(max_size=256, ttl_seconds=600.0)
         self._search_cache: TTLCache[tuple[list[TrackCandidate], dict[str, Any]]] = TTLCache(
             max_size=128, ttl_seconds=300.0
@@ -113,6 +116,12 @@ class RecommendationPipeline:
         candidates, query_strategy, search_cache_hit = await self._get_candidates(profile, top_k)
         t2 = time.perf_counter()
 
+        lyric_info = await self.genius.enrich_candidates(
+            profile,
+            candidates,
+            limit=settings.genius_lyrics_top_n,
+        )
+
         # Quality gate: if profile confidence is dangerously low, log a warning.
         quality_warnings: list[str] = []
         if profile.confidence < 0.3:
@@ -162,6 +171,7 @@ class RecommendationPipeline:
             "agent_loop_enabled": settings.agent_loop_enabled,
             "agent_iterations": agent_info.get("iterations", 0),
             "tools_called": agent_info.get("tools_called", []),
+            "lyrics": lyric_info,
             "cache_hits": {"profile": profile_cache_hit, "search": search_cache_hit},
             "quality_warnings": quality_warnings,
             "stage_ms": {

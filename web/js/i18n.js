@@ -129,6 +129,7 @@ const I18N = {
     audioEnergy: "energy",
     audioMood: "mood",
     audioTempo: "tempo",
+    lyricSignal: "lyric",
   },
   en: {
     heroKicker: "Editorial Issue · Spotify Curation",
@@ -255,6 +256,7 @@ const I18N = {
     audioEnergy: "energy",
     audioMood: "mood",
     audioTempo: "tempo",
+    lyricSignal: "lyric",
   },
 };
 

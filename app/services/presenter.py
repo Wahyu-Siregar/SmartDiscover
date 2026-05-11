@@ -29,6 +29,7 @@ class PresenterAgent:
                     why=reason,
                     score=track.score,
                     audio_features=track.audio_features,
+                    lyric_signals=track.lyric_signals,
                 )
             )
         return items
@@ -55,6 +56,13 @@ class PresenterAgent:
                 }
             if track.genres:
                 row["genres"] = track.genres[:3]
+            if track.lyric_signals:
+                row["lyrics"] = {
+                    "themes": track.lyric_signals.get("themes", [])[:4],
+                    "sentiment": track.lyric_signals.get("sentiment", ""),
+                    "summary": track.lyric_signals.get("summary", ""),
+                    "match_score": track.lyric_signals.get("match_score", 0),
+                }
             rows.append(row)
 
         system_prompt = (
@@ -92,6 +100,13 @@ class PresenterAgent:
     def _build_reason(self, profile: IntentProfile, track: TrackCandidate) -> str:
         if track.why.strip():
             return track.why
+        lyric_summary = ""
+        if track.lyric_signals and track.lyric_signals.get("summary"):
+            lyric_summary = (
+                f" Sinyal lirik: {track.lyric_signals['summary']}"
+                if profile.language == "id"
+                else f" Lyric signal: {track.lyric_signals['summary']}"
+            )
         locale_hint = ""
         if profile.locale:
             locale_hint = (
@@ -100,5 +115,5 @@ class PresenterAgent:
                 else f" with {profile.locale} context"
             )
         if profile.language == "id":
-            return f"Cocok untuk {profile.activity} dengan nuansa {profile.mood} dan energi {profile.energy}{locale_hint}."
-        return f"Good fit for {profile.activity} with a {profile.mood} mood and {profile.energy} energy{locale_hint}."
+            return f"Cocok untuk {profile.activity} dengan nuansa {profile.mood} dan energi {profile.energy}{locale_hint}.{lyric_summary}"
+        return f"Good fit for {profile.activity} with a {profile.mood} mood and {profile.energy} energy{locale_hint}.{lyric_summary}"

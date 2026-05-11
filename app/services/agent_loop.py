@@ -12,6 +12,7 @@ from typing import Any
 
 from app.config import settings
 from app.models import IntentProfile, TrackCandidate
+from app.services.genius_client import GeniusClient
 from app.services.openrouter_client import OpenRouterClient
 from app.services.spotify_client import SpotifyClient
 
@@ -29,6 +30,20 @@ TOOL_DEFINITIONS = [
                     "count": {"type": "integer", "minimum": 1, "maximum": 20, "default": 10},
                 },
                 "required": ["query"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "request_lyric_signals",
+            "description": "Fetch bounded Genius lyric metadata/signals for selected tracks only. Use when lyrics/themes are important to the intent.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "track_ids": {"type": "array", "items": {"type": "string"}},
+                },
+                "required": ["track_ids"],
             },
         },
     },
@@ -86,15 +101,17 @@ SYSTEM_PROMPT = (
     "You are SmartDiscover Orchestrator. You have a candidate pool of music tracks and an intent profile. "
     "Your job is to refine the pool to the best top_k tracks for the user. "
     "Use tools when the pool is too small, too homogeneous, or audio features mismatch the intent. "
+    "Use lyric signals for lyric/theme-sensitive prompts, but only for a small selected subset. "
     "Call `finalize` as soon as you are satisfied (max 3 iterations). "
-    "Avoid more than 2 tracks from the same artist. Prefer tracks with audio features matching target_audio."
+    "Avoid more than 2 tracks from the same artist. Prefer tracks with audio features and lyric signals matching the intent."
 )
 
 
 class AgenticOrchestrator:
-    def __init__(self, llm: OpenRouterClient, spotify: SpotifyClient) -> None:
+    def __init__(self, llm: OpenRouterClient, spotify: SpotifyClient, genius: GeniusClient | None = None) -> None:
         self.llm = llm
         self.spotify = spotify
+        self.genius = genius or GeniusClient()
 
     async def run(
         self,
@@ -162,6 +179,14 @@ class AgenticOrchestrator:
                         updated += 1
                 return {"updated": updated}
 
+            if name == "request_lyric_signals":
+                ids = [str(t) for t in args.get("track_ids", []) if t]
+                if not ids:
+                    return {"updated": 0}
+                selected = [c for c in pool.values() if c.track_id in ids]
+                lyric_info = await self.genius.enrich_candidates(profile, selected, limit=min(len(selected), 10))
+                return {"updated": lyric_info.get("filled", 0), "lookups": lyric_info.get("lookups", 0)}
+
             if name == "finalize":
                 ids = [str(t) for t in args.get("track_ids", []) if t]
                 finalized_order.extend(ids)
@@ -178,6 +203,15 @@ class AgenticOrchestrator:
                 "audio": (
                     {k: round(v, 3) for k, v in c.audio_features.items() if k in {"energy", "valence", "tempo"}}
                     if c.audio_features
+                    else None
+                ),
+                "lyrics": (
+                    {
+                        "themes": c.lyric_signals.get("themes", [])[:4],
+                        "sentiment": c.lyric_signals.get("sentiment", ""),
+                        "match_score": c.lyric_signals.get("match_score", 0),
+                    }
+                    if c.lyric_signals
                     else None
                 ),
             }

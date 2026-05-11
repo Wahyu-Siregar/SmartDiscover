@@ -45,7 +45,11 @@ function buildCard(item, rank) {
   // Footer: audio chips left, actions right.
   const footer = el("div", { class: "track-card__footer" });
   const chips = renderAudioChips(item.audio_features);
-  footer.appendChild(chips || el("span"));
+  const lyricChip = renderLyricChip(item.lyric_signals);
+  const chipWrap = el("div", { class: "audio-chips" });
+  if (chips) Array.from(chips.children).forEach((child) => chipWrap.appendChild(child));
+  if (lyricChip) chipWrap.appendChild(lyricChip);
+  footer.appendChild(chipWrap.children.length ? chipWrap : el("span"));
 
   const actions = el("div", { class: "track-card__actions" }, [
     renderPreview(item, card),
@@ -73,4 +77,17 @@ function buildCard(item, rank) {
   footer.appendChild(actions);
   card.appendChild(footer);
   return card;
+}
+
+function renderLyricChip(signals) {
+  if (!signals || typeof signals !== "object") return null;
+  const score = Number(signals.match_score);
+  const themes = Array.isArray(signals.themes) ? signals.themes.slice(0, 2).join(", ") : "";
+  return el("span", {
+    class: "audio-chip",
+    title: signals.summary || themes || tr("lyricSignal"),
+  }, [
+    el("span", { class: "audio-chip__icon", text: "♪" }),
+    el("span", { text: Number.isFinite(score) ? `${tr("lyricSignal")} ${formatPercent(score)}` : tr("lyricSignal") }),
+  ]);
 }

@@ -175,7 +175,13 @@ Important: Spotify requires an exact match (scheme, domain, and path).
 | `AGENT_LOOP_ENABLED` | no | `false` | Enable orchestrator tool-use loop (extra LLM calls). |
 | `AGENT_LOOP_MAX_ITERATIONS` | no | `3` | Hard limit for orchestrator iterations. |
 | `AGENT_LOOP_TIMEOUT_S` | no | `30.0` | Wall-clock budget for the orchestrator. |
+| `GENIUS_ACCESS_TOKEN` | no | - | Genius API bearer token for optional lyric-signal enrichment. |
+| `GENIUS_LYRICS_ENABLED` | no | `false` | Enables bounded Genius lookup for top candidates only. |
+| `GENIUS_LYRICS_TOP_N` | no | `10` | Maximum candidates enriched per request to avoid token/API explosion. |
+| `GENIUS_LYRICS_CACHE_TTL_S` | no | `86400` | TTL for cached Genius lyric signals. |
 | `EVAL_PASS_THRESHOLD` | no | `0.7` | Pass threshold used by `evals/run_eval.py` exit code. |
+
+Note: the official Genius API does not return full lyric text. SmartDiscover uses Genius metadata, lyrics state, URL, and description preview as bounded lyric signals. Full lyric-text retrieval should use a licensed lyrics provider before storing or displaying lyrics.
 
 ### Privacy disclosure
 

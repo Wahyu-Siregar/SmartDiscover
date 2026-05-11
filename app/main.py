@@ -93,6 +93,7 @@ async def lifespan(app: FastAPI):
         app.state.http_client = client
         app.state.pipeline.llm.attach_client(client)
         app.state.pipeline.spotify.attach_client(client)
+        app.state.pipeline.genius.attach_client(client)
         app.state.prompt_store.attach_client(client)
         logger.info("SmartDiscover ready (model=%s)", app.state.pipeline.llm.model)
         yield
@@ -108,6 +109,7 @@ _default_http_client = httpx.AsyncClient(
 app.state.pipeline = RecommendationPipeline()
 app.state.pipeline.llm.attach_client(_default_http_client)
 app.state.pipeline.spotify.attach_client(_default_http_client)
+app.state.pipeline.genius.attach_client(_default_http_client)
 app.state.prompt_store = PromptStore()
 app.state.prompt_store.attach_client(_default_http_client)
 app.state.limiter = limiter

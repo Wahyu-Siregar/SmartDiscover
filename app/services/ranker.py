@@ -74,12 +74,19 @@ class RankerAgent:
                 }
             if c.genres:
                 row["genres"] = c.genres[:5]
+            if c.lyric_signals:
+                row["lyrics"] = {
+                    "themes": c.lyric_signals.get("themes", [])[:4],
+                    "sentiment": c.lyric_signals.get("sentiment", ""),
+                    "summary": c.lyric_signals.get("summary", ""),
+                    "match_score": c.lyric_signals.get("match_score", 0),
+                }
             rows.append(row)
 
         system_prompt = (
             "You are Filter and Ranker Agent for music recommendations. "
             "Rank candidates by fit to intent_profile. Use provided audio features and genres "
-            "to make objective decisions; do not rely solely on title or artist name. "
+            "and lyric signals to make objective decisions; do not rely solely on title or artist name. "
             "Return JSON only with key 'ranked'. Each item must include idx, score (0..1), why (short, 1 sentence). "
             "Diversity rule: avoid more than 2 tracks from the same artist; prefer variety. "
             "If audio features deviate strongly from intent_profile.target_audio (e.g. energy mismatch >0.3), demote. "
@@ -229,6 +236,10 @@ class RankerAgent:
         if candidate.audio_features and profile.target_audio:
             audio_bonus = self._audio_similarity_bonus(candidate.audio_features, profile.target_audio)
 
+        lyric_bonus = 0.0
+        if candidate.lyric_signals:
+            lyric_bonus = self._lyric_signal_bonus(profile, candidate.lyric_signals)
+
         popularity = candidate.popularity / 100
 
         diversity_bonus = min(1.0, len(set(candidate.title.lower().split())) / 5)
@@ -246,7 +257,8 @@ class RankerAgent:
             (relevance * 0.40)
             + (mood_energy_fit * 0.15)
             + (audio_bonus * 0.25)
-            + (popularity * 0.10)
+            + (lyric_bonus * 0.12)
+            + (popularity * 0.08)
             + (diversity_bonus * 0.10)
             + locale_bonus
         )
@@ -271,3 +283,16 @@ class RankerAgent:
         distance = math.sqrt(sum(d * d for d in diffs)) / math.sqrt(len(diffs))
         # Map distance 0 -> 1.0, distance >=0.7 -> 0.0
         return max(0.0, min(1.0, 1.0 - (distance / 0.7)))
+
+    @staticmethod
+    def _lyric_signal_bonus(profile: IntentProfile, signals: dict[str, Any]) -> float:
+        score = float(signals.get("match_score") or 0.0)
+        themes = set(signals.get("themes") or [])
+        sentiment = str(signals.get("sentiment") or "")
+        if profile.mood in {"sad", "melancholy", "galau"} and sentiment == "sad":
+            score = max(score, 0.75)
+        if profile.energy == "high" and themes.intersection({"party", "confidence"}):
+            score = max(score, 0.7)
+        if profile.energy == "low" and themes.intersection({"calm", "heartbreak", "longing"}):
+            score = max(score, 0.7)
+        return max(0.0, min(1.0, score))

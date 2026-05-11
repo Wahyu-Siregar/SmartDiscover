@@ -32,6 +32,7 @@ class TrackCandidate(BaseModel):
     score: float = 0.0
     why: str = ""
     audio_features: dict[str, float] | None = None
+    lyric_signals: dict[str, Any] | None = None
     genres: list[str] = Field(default_factory=list)
     artist_ids: list[str] = Field(default_factory=list)
 
@@ -46,6 +47,7 @@ class RecommendationItem(BaseModel):
     why: str
     score: float
     audio_features: dict[str, float] | None = None
+    lyric_signals: dict[str, Any] | None = None
 
 
 class RecommendResponse(BaseModel):

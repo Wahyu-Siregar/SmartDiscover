@@ -52,7 +52,10 @@ function renderContent(item) {
   if (r.previewVal) r.previewVal.textContent = item.preview_url
     ? tr("detailPreviewAvailable")
     : tr("detailPreviewUnavailable");
-  if (r.reasonText) r.reasonText.textContent = item.why || tr("whyFallback");
+  if (r.reasonText) {
+    const lyricSummary = item.lyric_signals?.summary ? `\n\n${item.lyric_signals.summary}` : "";
+    r.reasonText.textContent = `${item.why || tr("whyFallback")}${lyricSummary}`;
+  }
   if (r.link) {
     r.link.textContent = tr("openSpotify");
     if (item.spotify_url) {
