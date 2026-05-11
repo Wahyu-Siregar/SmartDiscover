@@ -59,3 +59,20 @@ def test_presenter_skips_llm_when_all_tracks_already_have_why(monkeypatch) -> No
     assert items[0].why == "ranker reason 1"
     assert items[1].why == "ranker reason 2"
     assert presenter.last_used_llm is False
+
+
+def test_presenter_preserves_audio_features_for_frontend() -> None:
+    presenter = PresenterAgent()
+    profile = IntentProfile(language="en")
+    tracks = [
+        TrackCandidate(
+            title="A",
+            artist="X",
+            score=0.9,
+            audio_features={"energy": 0.8, "valence": 0.6, "tempo": 120.0},
+        ),
+    ]
+
+    items = asyncio.run(presenter.present(profile, tracks))
+
+    assert items[0].audio_features == {"energy": 0.8, "valence": 0.6, "tempo": 120.0}

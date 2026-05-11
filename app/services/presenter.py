@@ -28,6 +28,7 @@ class PresenterAgent:
                     preview_url=track.preview_url,
                     why=reason,
                     score=track.score,
+                    audio_features=track.audio_features,
                 )
             )
         return items

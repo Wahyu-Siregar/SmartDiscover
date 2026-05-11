@@ -45,6 +45,7 @@ class RecommendationItem(BaseModel):
     preview_url: str
     why: str
     score: float
+    audio_features: dict[str, float] | None = None
 
 
 class RecommendResponse(BaseModel):

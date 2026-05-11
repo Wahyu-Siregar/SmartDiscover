@@ -72,7 +72,13 @@ export function renderExportBar(data, sourceText) {
       if (res?.url) {
         btn.textContent = tr("exportCreated");
         btn.disabled = false;
-        btn.onclick = () => window.open(res.url, "_blank");
+        btn.replaceWith(el("a", {
+          class: "btn btn--ghost",
+          href: res.url,
+          target: "_blank",
+          rel: "noopener noreferrer",
+          text: tr("exportCreated"),
+        }));
         setStatus(tr("exportSuccessStatus"));
       } else {
         throw new Error(tr("genericFailedPlaylist"));

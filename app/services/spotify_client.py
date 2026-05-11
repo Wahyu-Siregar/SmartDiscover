@@ -743,6 +743,7 @@ class SpotifyClient:
         if track_ids:
             uris = [f"spotify:track:{tid}" for tid in track_ids]
             add_url = f"https://api.spotify.com/v1/playlists/{playlist_id}/tracks"
-            await client.post(add_url, json={"uris": uris}, headers=headers, timeout=20.0)
+            add_resp = await client.post(add_url, json={"uris": uris}, headers=headers, timeout=20.0)
+            add_resp.raise_for_status()
 
         return {"id": playlist_id, "url": playlist_data["external_urls"]["spotify"]}
