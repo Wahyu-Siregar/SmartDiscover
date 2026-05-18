@@ -56,6 +56,7 @@ export function renderRefineBar(data) {
         previous_track_ids: previousTrackIds,
         refinement_text: text,
         target_count: data.summary?.target_count || null,
+        agentic_mode: $("agenticModeSelect")?.value || data.quality_notes?.agentic?.mode_requested || "auto",
       });
 
       renderResultPayload(refined, refined.summary?.intent_text || "");

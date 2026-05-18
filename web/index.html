@@ -74,6 +74,14 @@
               <label class="field__label" for="targetCountInput" id="targetCountLabel">Berapa Lagu?</label>
               <input id="targetCountInput" class="input input--small" type="number" inputmode="numeric" min="5" max="50" value="15" />
             </div>
+            <div class="field">
+              <label class="field__label" for="agenticModeSelect" id="agenticModeLabel">Agent Mode</label>
+              <select id="agenticModeSelect" class="input input--small">
+                <option id="agenticModeAuto" value="auto">Auto</option>
+                <option id="agenticModeAgentic" value="agentic">Agentic</option>
+                <option id="agenticModeLinear" value="linear">Linear</option>
+              </select>
+            </div>
             <button id="submitBtn" class="btn btn--primary btn--block" type="submit">
               <span id="submitText">Mulai Kurasi</span>
             </button>

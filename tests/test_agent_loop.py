@@ -137,3 +137,62 @@ def test_agent_loop_can_request_lyric_signals(monkeypatch) -> None:
     refined, info = result
     assert "request_lyric_signals" in info["tools_called"]
     assert refined[0].lyric_signals["match_score"] == 0.9
+
+
+def test_agent_loop_guardrails_record_tool_failures(monkeypatch) -> None:
+    candidates = [
+        TrackCandidate(
+            title="Known",
+            artist="A",
+            track_id="tid1",
+            audio_features={"energy": 0.5, "valence": 0.5, "tempo": 100.0},
+        )
+    ]
+    profile = IntentProfile(mood="calm", activity="listening", language="en")
+
+    llm_responses = [
+        {
+            "tool_calls": [
+                {
+                    "id": "1",
+                    "function": {
+                        "name": "request_more_candidates",
+                        "arguments": '{"query": "", "count": 99}',
+                    },
+                },
+                {
+                    "id": "2",
+                    "function": {
+                        "name": "filter_by_audio",
+                        "arguments": '{"min_energy": 1.2}',
+                    },
+                },
+                {
+                    "id": "3",
+                    "function": {
+                        "name": "request_audio_features",
+                        "arguments": '{"track_ids": ["missing"]}',
+                    },
+                },
+                {
+                    "id": "4",
+                    "function": {
+                        "name": "finalize",
+                        "arguments": '{"track_ids": ["tid1"]}',
+                    },
+                },
+            ]
+        },
+        {"content": "done", "tool_calls": []},
+    ]
+
+    orchestrator = _make_orchestrator(monkeypatch, llm_responses)
+    result = asyncio.run(orchestrator.run(profile, candidates, target_count=1))
+
+    assert result is not None
+    _refined, info = result
+    trace_text = " ".join(str(item.get("result_summary", "")) for item in info["trace"])
+    assert "invalid_query" in trace_text
+    assert "invalid_audio_range" in trace_text
+    assert "unknown_track_ids" in trace_text
+    assert info["finalized"] is True

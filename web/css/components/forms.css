@@ -34,7 +34,7 @@
 
   .field-row {
     display: grid;
-    grid-template-columns: minmax(120px, 200px) 1fr;
+    grid-template-columns: minmax(120px, 160px) minmax(140px, 180px) 1fr;
     gap: var(--space-4);
     align-items: end;
   }

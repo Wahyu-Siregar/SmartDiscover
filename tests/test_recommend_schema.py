@@ -44,7 +44,12 @@ def _fake_recommend_response(target_count: int = 5) -> dict:
     }
 
 
-def test_recommend_default_schema_and_count() -> None:
+def test_recommend_default_schema_and_count(monkeypatch) -> None:
+    async def fake_run(_payload):
+        return _fake_recommend_response(15)
+
+    monkeypatch.setattr("app.main.pipeline.run", fake_run)
+
     response = client.post(
         "/recommend",
         json={"text": "aku mau lagu buat belajar malam yang tenang dan fokus"},
@@ -73,7 +78,12 @@ def test_recommend_default_schema_and_count() -> None:
     assert ranks[0] == 1
 
 
-def test_recommend_custom_target_count() -> None:
+def test_recommend_custom_target_count(monkeypatch) -> None:
+    async def fake_run(_payload):
+        return _fake_recommend_response(5)
+
+    monkeypatch.setattr("app.main.pipeline.run", fake_run)
+
     response = client.post(
         "/recommend",
         json={"text": "energetic running mix", "target_count": 5},

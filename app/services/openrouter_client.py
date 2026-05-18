@@ -29,6 +29,21 @@ def _summarize(result: Any, max_len: int = 240) -> str:
         return "<unrepr>"
 
 
+def _summarize_tool_arguments(arguments: dict[str, Any]) -> dict[str, Any]:
+    summary: dict[str, Any] = {}
+    if "query" in arguments:
+        summary["query_chars"] = len(str(arguments.get("query") or ""))
+    if "count" in arguments:
+        summary["count"] = arguments.get("count")
+    if "track_ids" in arguments:
+        raw_ids = arguments.get("track_ids")
+        summary["track_ids_count"] = len(raw_ids) if isinstance(raw_ids, list) else 0
+    for key in ("min_energy", "max_energy", "min_valence", "max_valence", "min_tempo", "max_tempo"):
+        if key in arguments:
+            summary[key] = arguments[key]
+    return summary
+
+
 class OpenRouterClient:
     def __init__(self, client: httpx.AsyncClient | None = None) -> None:
         self.base_url = settings.openrouter_base_url.rstrip("/")
@@ -216,7 +231,11 @@ class OpenRouterClient:
                     result = await tool_executor(name, arguments)
                 except Exception as exc:
                     result = {"error": str(exc)}
-                trace.append({"name": name, "arguments": arguments, "result_summary": _summarize(result)})
+                trace.append({
+                    "name": name,
+                    "arguments_summary": _summarize_tool_arguments(arguments),
+                    "result_summary": _summarize(result),
+                })
                 messages.append(
                     {
                         "role": "tool",

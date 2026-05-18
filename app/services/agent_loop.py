@@ -17,6 +17,11 @@ from app.services.openrouter_client import OpenRouterClient
 from app.services.spotify_client import SpotifyClient
 
 
+MAX_TOOL_COUNT = 20
+MAX_TRACK_IDS = 50
+MAX_POOL_SIZE = 120
+MAX_QUERY_CHARS = 120
+
 TOOL_DEFINITIONS = [
     {
         "type": "function",
@@ -118,9 +123,11 @@ class AgenticOrchestrator:
         profile: IntentProfile,
         candidates: list[TrackCandidate],
         target_count: int,
+        *,
+        force: bool = False,
     ) -> tuple[list[TrackCandidate], dict[str, Any]] | None:
         """Run the agentic loop. Returns (refined_candidates, info) or None on disabled/failure."""
-        if not settings.agent_loop_enabled or not self.llm.enabled or not candidates:
+        if (not force and not settings.agent_loop_enabled) or not self.llm.enabled or not candidates:
             return None
 
         pool: dict[str, TrackCandidate] = {
@@ -128,27 +135,39 @@ class AgenticOrchestrator:
         }
         finalized_order: list[str] = []
         deadline = time.monotonic() + settings.agent_loop_timeout_s
-        info: dict[str, Any] = {"tools_called": [], "iterations": 0}
+        info: dict[str, Any] = {
+            "tools_called": [],
+            "iterations": 0,
+            "status": "running",
+            "finalized": False,
+            "fallback_reason": "",
+        }
 
         async def tool_executor(name: str, args: dict[str, Any]) -> Any:
             if time.monotonic() > deadline:
-                return {"error": "timeout"}
+                return self._tool_error("timeout", "Agent loop wall-clock budget expired.")
 
             info["tools_called"].append(name)
 
             if name == "request_more_candidates":
                 query = str(args.get("query", "")).strip()
-                count = int(args.get("count", 10))
                 if not query:
-                    return {"added": 0}
+                    return self._tool_error("invalid_query", "Search query must not be empty.")
+                if len(query) > MAX_QUERY_CHARS:
+                    query = query[:MAX_QUERY_CHARS].strip()
+                count, count_meta = self._bounded_int(args.get("count", 10), default=10, min_value=1, max_value=MAX_TOOL_COUNT)
+                if len(pool) >= MAX_POOL_SIZE:
+                    return self._tool_error("pool_limit_reached", "Candidate pool is already at the agentic limit.")
                 added = await self._search_more(query, profile, count)
                 new_count = 0
                 for c in added:
+                    if len(pool) >= MAX_POOL_SIZE:
+                        break
                     key = c.track_id or f"local_{len(pool)}"
                     if key not in pool:
                         pool[key] = c
                         new_count += 1
-                return {
+                result = {
                     "added": new_count,
                     "pool_size": len(pool),
                     "preview": [
@@ -156,8 +175,13 @@ class AgenticOrchestrator:
                         for c in added[:5]
                     ],
                 }
+                result.update(count_meta)
+                return result
 
             if name == "filter_by_audio":
+                validation_error = self._validate_audio_constraints(args)
+                if validation_error:
+                    return validation_error
                 kept = self._filter_by_audio(list(pool.values()), args)
                 kept_ids = {c.track_id or "" for c in kept}
                 removed = 0
@@ -168,9 +192,9 @@ class AgenticOrchestrator:
                 return {"removed": removed, "pool_size": len(pool)}
 
             if name == "request_audio_features":
-                ids = [str(t) for t in args.get("track_ids", []) if t]
-                if not ids:
-                    return {"updated": 0}
+                ids, validation_error = self._validated_known_track_ids(args.get("track_ids", []), pool)
+                if validation_error:
+                    return validation_error
                 features = await self.spotify.get_audio_features(ids)
                 updated = 0
                 for c in pool.values():
@@ -180,19 +204,27 @@ class AgenticOrchestrator:
                 return {"updated": updated}
 
             if name == "request_lyric_signals":
-                ids = [str(t) for t in args.get("track_ids", []) if t]
-                if not ids:
-                    return {"updated": 0}
+                ids, validation_error = self._validated_known_track_ids(args.get("track_ids", []), pool)
+                if validation_error:
+                    return validation_error
                 selected = [c for c in pool.values() if c.track_id in ids]
                 lyric_info = await self.genius.enrich_candidates(profile, selected, limit=min(len(selected), 10))
                 return {"updated": lyric_info.get("filled", 0), "lookups": lyric_info.get("lookups", 0)}
 
             if name == "finalize":
-                ids = [str(t) for t in args.get("track_ids", []) if t]
+                ids, validation_error = self._validated_known_track_ids(
+                    args.get("track_ids", []),
+                    pool,
+                    allow_empty=False,
+                    max_ids=max(target_count, 1),
+                )
+                if validation_error:
+                    return validation_error
                 finalized_order.extend(ids)
+                info["finalized"] = True
                 return {"accepted": len(ids), "reasoning_recorded": bool(args.get("reasoning"))}
 
-            return {"error": f"unknown tool: {name}"}
+            return self._tool_error("unknown_tool", f"Unknown tool: {name}")
 
         # Build initial user prompt with compact pool view.
         pool_view = [
@@ -240,13 +272,20 @@ class AgenticOrchestrator:
             )
         except asyncio.TimeoutError:
             info["timeout"] = True
+            info["status"] = "timeout"
+            info["fallback_reason"] = "Agent loop timed out; used current candidate pool."
             result = None
 
         if not result:
-            return None
+            if info["status"] == "running":
+                info["status"] = "failed"
+                info["fallback_reason"] = "Agent loop returned no result."
+            return list(pool.values()), info
 
         info["iterations"] = result.get("iterations", 0)
         info["trace"] = result.get("trace", [])
+        if info["status"] == "running":
+            info["status"] = "completed" if info["finalized"] else "completed_without_finalize"
 
         # Apply finalize order if any; otherwise use current pool order.
         if finalized_order:
@@ -273,6 +312,70 @@ class AgenticOrchestrator:
             return ordered, info
 
         return list(pool.values()), info
+
+    @staticmethod
+    def _tool_error(code: str, message: str, **extra: Any) -> dict[str, Any]:
+        return {"error": code, "message": message, **extra}
+
+    @staticmethod
+    def _bounded_int(value: Any, *, default: int, min_value: int, max_value: int) -> tuple[int, dict[str, Any]]:
+        meta: dict[str, Any] = {}
+        try:
+            parsed = int(value)
+        except Exception:
+            parsed = default
+            meta["count_defaulted"] = True
+        bounded = max(min_value, min(max_value, parsed))
+        if bounded != parsed:
+            meta["count_clamped"] = True
+            meta["requested_count"] = parsed
+            meta["effective_count"] = bounded
+        return bounded, meta
+
+    @classmethod
+    def _validated_known_track_ids(
+        cls,
+        raw_ids: Any,
+        pool: dict[str, TrackCandidate],
+        *,
+        allow_empty: bool = False,
+        max_ids: int = MAX_TRACK_IDS,
+    ) -> tuple[list[str], dict[str, Any] | None]:
+        if not isinstance(raw_ids, list):
+            return [], cls._tool_error("invalid_track_ids", "track_ids must be a list.")
+        ids = list(dict.fromkeys(str(t).strip() for t in raw_ids if str(t).strip()))
+        if not ids and not allow_empty:
+            return [], cls._tool_error("invalid_track_ids", "track_ids must include at least one id.")
+        if len(ids) > max_ids:
+            ids = ids[:max_ids]
+        known_ids = {c.track_id for c in pool.values() if c.track_id}
+        unknown = [tid for tid in ids if tid not in known_ids]
+        if unknown:
+            return [], cls._tool_error("unknown_track_ids", "One or more track_ids are not in the candidate pool.")
+        return ids, None
+
+    @classmethod
+    def _validate_audio_constraints(cls, constraints: dict[str, Any]) -> dict[str, Any] | None:
+        ranges = {
+            "energy": ("min_energy", "max_energy", 0.0, 1.0),
+            "valence": ("min_valence", "max_valence", 0.0, 1.0),
+            "tempo": ("min_tempo", "max_tempo", 0.0, 300.0),
+        }
+        for label, (min_key, max_key, low, high) in ranges.items():
+            parsed: dict[str, float] = {}
+            for key in (min_key, max_key):
+                if key not in constraints:
+                    continue
+                try:
+                    value = float(constraints[key])
+                except Exception:
+                    return cls._tool_error("invalid_audio_range", f"{key} must be numeric.")
+                if value < low or value > high:
+                    return cls._tool_error("invalid_audio_range", f"{key} must be between {low:g} and {high:g}.")
+                parsed[key] = value
+            if min_key in parsed and max_key in parsed and parsed[min_key] > parsed[max_key]:
+                return cls._tool_error("invalid_audio_range", f"{label} min cannot exceed max.")
+        return None
 
     async def _search_more(
         self, query: str, profile: IntentProfile, count: int

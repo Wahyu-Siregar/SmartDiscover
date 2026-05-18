@@ -19,7 +19,7 @@
 
 ## Why SmartDiscover
 
-SmartDiscover is a 4-agent AI music recommendation system. Instead of relying on literal keyword matching alone, the pipeline splits the process into intent analysis, candidate retrieval, ranking, and result presentation so recommendations feel more natural and contextual.
+SmartDiscover is a multi-agent music discovery pipeline with optional agentic orchestration using LLM tool-calling. Instead of relying on literal keyword matching alone, the pipeline splits the process into intent analysis, candidate retrieval, ranking, and result presentation so recommendations feel more natural and contextual.
 
 | Core Value | Impact |
 |---|---|
@@ -35,7 +35,7 @@ SmartDiscover is a 4-agent AI music recommendation system. Instead of relying on
 flowchart TD
   A[User Prompt] --> B[1. Profiler Agent<br/>hybrid: heuristic + LLM<br/>JSON-mode + few-shot]
   B --> C[2. Spotify Discovery Agent<br/>recommendations + search<br/>+ audio features + artist genres]
-  C --> O{AGENT_LOOP_ENABLED?}
+  C --> O{agentic_mode + AGENT_LOOP_ENABLED?}
   O -- yes --> L[Orchestrator Agent<br/>tool-use loop max 3 iter:<br/>request_more_candidates,<br/>filter_by_audio,<br/>request_audio_features,<br/>finalize]
   O -- no --> D
   L --> D[3. Ranker Agent<br/>rich context: audio + genres<br/>min-output guard<br/>artist diversity]
@@ -59,11 +59,12 @@ flowchart TD
 - Enriches every candidate with `GET /v1/audio-features` (tempo, energy, valence, danceability, acousticness, instrumentalness, loudness) and `GET /v1/artists` (artist genres) — all batched and parallel.
 - Dynamic `market` derived from intent locale.
 
-### 3. Orchestrator Agent (opt-in)
+### 3. Orchestrator Agent (opt-in / runtime selectable)
 
-- Activated when `AGENT_LOOP_ENABLED=true`.
-- Tool-use loop via OpenRouter function calling: `request_more_candidates`, `filter_by_audio`, `request_audio_features`, `finalize`.
-- Hard limits: 3 iterations, 30s wall, automatic fallback on failure.
+- Activated when `AGENT_LOOP_ENABLED=true` or when a request sends `agentic_mode="agentic"`.
+- Tool-use loop via OpenRouter function calling: `request_more_candidates`, `filter_by_audio`, `request_audio_features`, `request_lyric_signals`, `finalize`.
+- Hard limits: 3 iterations, 30s wall, bounded candidate pool, validated tool inputs, automatic fallback on failure.
+- Every response includes `quality_notes.agentic` with requested/effective mode, status, iteration count, tool path, trace summaries, finalized flag, and fallback reason.
 
 ### 4. Ranker Agent
 
@@ -80,8 +81,8 @@ flowchart TD
 
 ### 6. `/refine` (multi-turn)
 
-- Stateless: client posts `{previous_profile, previous_track_ids, refinement_text}`.
-- Pipeline merges previous intent + refinement, re-runs Spotify discovery + ranker, excludes already-seen track ids.
+- Stateless: client posts `{previous_profile, previous_track_ids, refinement_text, agentic_mode?}`.
+- Pipeline merges previous intent + refinement, re-runs Spotify discovery + ranker, and always excludes already-seen track ids.
 
 ---
 
@@ -172,7 +173,7 @@ Important: Spotify requires an exact match (scheme, domain, and path).
 | `APP_PUBLIC_URL` | no | `http://localhost:8000` | Public base URL; used as `HTTP-Referer` for OpenRouter. |
 | `COOKIE_SECURE` | prod | `false` | Set `true` when serving behind HTTPS. |
 | `SUPABASE_URL` / `SUPABASE_API_KEY` | no | - | Optional analytics destination for prompt logs. |
-| `AGENT_LOOP_ENABLED` | no | `false` | Enable orchestrator tool-use loop (extra LLM calls). |
+| `AGENT_LOOP_ENABLED` | no | `false` | Enable orchestrator tool-use loop by default. Individual requests can still force it with `agentic_mode="agentic"` when the LLM is enabled. |
 | `AGENT_LOOP_MAX_ITERATIONS` | no | `3` | Hard limit for orchestrator iterations. |
 | `AGENT_LOOP_TIMEOUT_S` | no | `30.0` | Wall-clock budget for the orchestrator. |
 | `GENIUS_ACCESS_TOKEN` | no | - | Genius API bearer token for optional lyric-signal enrichment. |
@@ -200,6 +201,16 @@ uvicorn app.main:app --reload
 ```
 
 Open the app at http://127.0.0.1:8000/
+
+### Agentic demo mode
+
+Use the **Agent Mode** selector in the form:
+
+- `Auto`: follows `AGENT_LOOP_ENABLED`.
+- `Agentic`: forces the orchestrator loop when `OPENROUTER_API_KEY` is configured.
+- `Linear`: bypasses the orchestrator for a deterministic pipeline baseline.
+
+The **Behind the scenes** panel shows the effective mode, loop status, tool path, trace summaries, and fallback reason.
 
 ## Demo
 
@@ -264,8 +275,8 @@ If Spotify credentials are missing or invalid, the application still runs in fal
 | `GET`  | `/health` | Liveness check. |
 | `GET`  | `/spotify/health` | Spotify reachability. |
 | `GET`  | `/llm/health` | OpenRouter reachability. |
-| `POST` | `/recommend` | Run the full pipeline. Body: `{text, target_count?}`. |
-| `POST` | `/refine` | Multi-turn refine. Body: `{previous_profile, previous_track_ids, refinement_text, target_count?}`. |
+| `POST` | `/recommend` | Run the full pipeline. Body: `{text, target_count?, agentic_mode?}` where `agentic_mode` is `auto`, `agentic`, or `linear`. |
+| `POST` | `/refine` | Multi-turn refine. Body: `{previous_profile, previous_track_ids, refinement_text, target_count?, agentic_mode?}`. |
 | `GET`  | `/api/prompt-suggestions?q=` | Recent-prompt autocomplete (rate-limited). |
 | `GET`  | `/auth/login` → `/auth/callback` | Spotify OAuth (HttpOnly cookie session, CSRF-protected). |
 | `GET`  | `/auth/status` | Returns `{connected, expires_at}`. |
