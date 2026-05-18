@@ -43,6 +43,27 @@ export function renderAgenticPanel(qualityNotes) {
   llmRow.appendChild(flag("Agent loop", qualityNotes.agent_loop_enabled));
   body.appendChild(llmRow);
 
+  const agentic = qualityNotes.agentic || {
+    mode_requested: qualityNotes.agent_loop_enabled ? "auto" : "linear",
+    mode_effective: qualityNotes.agent_loop_enabled ? "agentic" : "linear",
+    status: qualityNotes.agent_loop_enabled ? "legacy" : "disabled",
+    iterations: qualityNotes.agent_iterations || 0,
+    tools_called: qualityNotes.tools_called || [],
+    trace: [],
+    finalized: false,
+    fallback_reason: "",
+  };
+
+  body.appendChild(el("p", { class: "agentic-panel__section-label", text: tr("agenticMode") }));
+  body.appendChild(el("div", { class: "cluster" }, [
+    chip(`${tr("agenticMode")}: ${agentic.mode_requested} → ${agentic.mode_effective}`, agentic.mode_effective === "agentic"),
+    chip(`${tr("agenticStatus")}: ${agentic.status}`, agentic.status === "completed"),
+    chip(`finalized: ${agentic.finalized ? "yes" : "no"}`, !!agentic.finalized),
+  ]));
+  if (agentic.fallback_reason) {
+    body.appendChild(el("span", { class: "agentic-flag", text: `${tr("agenticFallback")}: ${agentic.fallback_reason}` }));
+  }
+
   // 3) Cache hits.
   const cache = qualityNotes.cache_hits || {};
   if (Object.keys(cache).length) {
@@ -58,8 +79,8 @@ export function renderAgenticPanel(qualityNotes) {
   }
 
   // 4) Agentic loop trace.
-  const tools = qualityNotes.tools_called || [];
-  const iterations = Number(qualityNotes.agent_iterations || 0);
+  const tools = agentic.tools_called || [];
+  const iterations = Number(agentic.iterations || 0);
   if (iterations > 0 || tools.length) {
     body.appendChild(el("p", { class: "agentic-panel__section-label", text: `${tr("agenticIterations")}: ${iterations}` }));
     if (tools.length) {
@@ -70,6 +91,19 @@ export function renderAgenticPanel(qualityNotes) {
       });
       body.appendChild(trace);
     }
+  }
+
+  const traceItems = Array.isArray(agentic.trace) ? agentic.trace : [];
+  if (traceItems.length) {
+    body.appendChild(el("p", { class: "agentic-panel__section-label", text: tr("agenticTrace") }));
+    const trace = el("div", { class: "agentic-trace" });
+    traceItems.slice(0, 8).forEach((item, i) => {
+      if (i > 0) trace.appendChild(el("span", { class: "agentic-trace__sep", text: "→" }));
+      const name = item?.name || "tool";
+      const summary = item?.result_summary ? ` · ${item.result_summary}` : "";
+      trace.appendChild(el("span", { class: "agentic-trace__step", title: summary, text: name }));
+    });
+    body.appendChild(trace);
   }
 
   // 5) Refined-from chip.
@@ -84,5 +118,12 @@ function flag(label, on) {
   return el("span", {
     class: on ? "agentic-flag is-on" : "agentic-flag",
     text: `${label} ${on ? "✓" : "—"}`,
+  });
+}
+
+function chip(text, on) {
+  return el("span", {
+    class: on ? "agentic-flag is-on" : "agentic-flag",
+    text,
   });
 }

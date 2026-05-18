@@ -25,6 +25,7 @@ function applyStaticLabels() {
     subtitleText: "subtitle",
     intentLabel: "intentLabel",
     targetCountLabel: "targetCountLabel",
+    agenticModeLabel: "agenticModeLabel",
     submitText: "submit",
     quickPromptLabel: "quickPromptLabel",
     chipFocus: "chipFocus",
@@ -47,6 +48,16 @@ function applyStaticLabels() {
 
   const intentInput = $("intentInput");
   if (intentInput) intentInput.setAttribute("placeholder", tr("intentPlaceholder"));
+
+  const agenticOptions = {
+    agenticModeAuto: "agenticAuto",
+    agenticModeAgentic: "agenticForce",
+    agenticModeLinear: "agenticLinear",
+  };
+  for (const [id, key] of Object.entries(agenticOptions)) {
+    const node = $(id);
+    if (node) node.textContent = tr(key);
+  }
 
   // Spotify button
   const spotifyBtn = $("spotifyLoginBtn");
@@ -206,6 +217,7 @@ function bindForm() {
     }
     const targetEl = $("targetCountInput");
     const targetCount = Number(targetEl?.value) || 15;
+    const agenticMode = $("agenticModeSelect")?.value || "auto";
 
     const submitBtn = $("submitBtn");
     if (submitBtn) submitBtn.disabled = true;
@@ -219,7 +231,7 @@ function bindForm() {
     const timeline = startAgentTimeline();
 
     try {
-      const data = await api.recommend({ text, target_count: targetCount });
+      const data = await api.recommend({ text, target_count: targetCount, agentic_mode: agenticMode });
       // Hand the real backend timings to the timeline so it can finish
       // gracefully and refine its future estimates.
       timeline.finalize(data?.quality_notes?.stage_ms || {}, tr("stageDone"));

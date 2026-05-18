@@ -18,7 +18,7 @@ def test_pipeline_caches_profile_and_search(monkeypatch) -> None:
         profile_calls += 1
         return IntentProfile(mood="calm", activity="studying", genre=["lo-fi"], energy="low", language="id")
 
-    async def fake_search(profile, target_count):
+    async def fake_gather(profile, target_count):
         nonlocal search_calls
         search_calls += 1
         return (
@@ -30,7 +30,7 @@ def test_pipeline_caches_profile_and_search(monkeypatch) -> None:
         )
 
     pipeline.profiler.profile = fake_profile  # type: ignore[assignment]
-    pipeline.spotify.search_tracks = fake_search  # type: ignore[assignment]
+    pipeline.spotify.gather_candidates = fake_gather  # type: ignore[assignment]
 
     payload = RecommendRequest(text="lagu fokus malam", target_count=2)
 
@@ -54,11 +54,11 @@ def test_pipeline_cache_keys_differ_for_different_prompts(monkeypatch) -> None:
         # Different text -> different profile signature.
         return IntentProfile(mood=text[:5], activity="listening", language="id")
 
-    async def fake_search(profile, target_count):
+    async def fake_gather(profile, target_count):
         return ([], {"variants": [], "broadening_applied": False})
 
     pipeline.profiler.profile = fake_profile  # type: ignore[assignment]
-    pipeline.spotify.search_tracks = fake_search  # type: ignore[assignment]
+    pipeline.spotify.gather_candidates = fake_gather  # type: ignore[assignment]
 
     async def _run() -> None:
         await pipeline.run(RecommendRequest(text="prompt-one"))

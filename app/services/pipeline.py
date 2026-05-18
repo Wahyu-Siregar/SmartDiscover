@@ -4,6 +4,7 @@ from typing import Any
 
 from app.config import settings
 from app.models import (
+    AgenticMode,
     IntentProfile,
     RecommendRequest,
     RecommendResponse,
@@ -79,7 +80,11 @@ class RecommendationPipeline:
         return result[0], result[1], False
 
     async def run(self, payload: RecommendRequest) -> RecommendResponse:
-        return await self._run_for_profile(text=payload.text, target_count=payload.target_count)
+        return await self._run_for_profile(
+            text=payload.text,
+            target_count=payload.target_count,
+            agentic_mode=payload.agentic_mode,
+        )
 
     async def run_refine(self, payload: RefineRequest) -> RecommendResponse:
         merged_text = (
@@ -92,6 +97,7 @@ class RecommendationPipeline:
             target_count=payload.target_count,
             previous_track_ids=previous_ids,
             refined_from=self._signature_short(payload.previous_profile),
+            agentic_mode=payload.agentic_mode,
         )
 
     @staticmethod
@@ -103,6 +109,7 @@ class RecommendationPipeline:
         *,
         text: str,
         target_count: int | None,
+        agentic_mode: AgenticMode = "auto",
         previous_track_ids: set[str] | None = None,
         refined_from: str | None = None,
     ) -> RecommendResponse:
@@ -129,19 +136,37 @@ class RecommendationPipeline:
             logger.warning("Low profile confidence: %.2f for text: %s", profile.confidence, text[:80])
 
         if previous_track_ids:
-            filtered = [c for c in candidates if c.track_id not in previous_track_ids]
-            if len(filtered) >= max(top_k, 5):
-                candidates = filtered
+            original_count = len(candidates)
+            candidates = [c for c in candidates if c.track_id not in previous_track_ids]
+            excluded_count = original_count - len(candidates)
+            if excluded_count:
+                quality_warnings.append(f"refine_previous_tracks_excluded ({excluded_count})")
+            if len(candidates) < top_k:
+                quality_warnings.append(f"refine_candidate_pool_short ({len(candidates)} < {top_k})")
 
         # Optional agentic loop (opt-in).
-        agent_info: dict[str, Any] = {}
-        if settings.agent_loop_enabled and self.llm.enabled:
+        agentic_notes = self._initial_agentic_notes(agentic_mode)
+        should_run_agentic = self._should_run_agentic(agentic_mode, agentic_notes)
+        if should_run_agentic:
             try:
-                result = await self.orchestrator.run(profile, candidates, top_k)
+                result = await self.orchestrator.run(
+                    profile,
+                    candidates,
+                    top_k,
+                    force=(agentic_mode == "agentic"),
+                )
                 if result is not None:
                     candidates, agent_info = result
+                    self._merge_agentic_info(agentic_notes, agent_info)
+                else:
+                    agentic_notes["mode_effective"] = "linear"
+                    agentic_notes["status"] = "fallback"
+                    agentic_notes["fallback_reason"] = "Agent loop returned no result."
             except Exception as exc:
                 logger.warning("Agent loop failed, falling back to linear: %s", exc)
+                agentic_notes["mode_effective"] = "linear"
+                agentic_notes["status"] = "failed"
+                agentic_notes["fallback_reason"] = "Agent loop failed; used linear pipeline."
 
         if len(candidates) < max(int(top_k * 0.6), 5):
             quality_warnings.append(f"candidate_pool_small ({len(candidates)} < {int(top_k * 0.6)})")
@@ -169,8 +194,9 @@ class RecommendationPipeline:
             "llm_presenter_used": self.presenter.last_used_llm,
             "llm_enabled": self.llm.enabled,
             "agent_loop_enabled": settings.agent_loop_enabled,
-            "agent_iterations": agent_info.get("iterations", 0),
-            "tools_called": agent_info.get("tools_called", []),
+            "agent_iterations": agentic_notes["iterations"],
+            "tools_called": agentic_notes["tools_called"],
+            "agentic": agentic_notes,
             "lyrics": lyric_info,
             "cache_hits": {"profile": profile_cache_hit, "search": search_cache_hit},
             "quality_warnings": quality_warnings,
@@ -197,3 +223,52 @@ class RecommendationPipeline:
             recommendations=presented,
             quality_notes=notes,
         )
+
+    def _initial_agentic_notes(self, requested: AgenticMode) -> dict[str, Any]:
+        status = "disabled"
+        fallback_reason = ""
+        if requested == "linear":
+            status = "bypassed"
+        elif requested == "agentic" and not self.llm.enabled:
+            status = "unavailable_llm"
+            fallback_reason = "LLM is disabled."
+        elif requested == "auto" and not settings.agent_loop_enabled:
+            status = "disabled"
+            fallback_reason = "AGENT_LOOP_ENABLED is false."
+        elif requested == "auto" and not self.llm.enabled:
+            status = "unavailable_llm"
+            fallback_reason = "LLM is disabled."
+        elif requested in {"auto", "agentic"}:
+            status = "pending"
+
+        return {
+            "mode_requested": requested,
+            "mode_effective": "linear",
+            "status": status,
+            "iterations": 0,
+            "tools_called": [],
+            "trace": [],
+            "finalized": False,
+            "fallback_reason": fallback_reason,
+        }
+
+    def _should_run_agentic(self, requested: AgenticMode, notes: dict[str, Any]) -> bool:
+        if requested == "linear" or not self.llm.enabled:
+            return False
+        if requested == "agentic":
+            notes["mode_effective"] = "agentic"
+            return True
+        if settings.agent_loop_enabled:
+            notes["mode_effective"] = "agentic"
+            return True
+        return False
+
+    @staticmethod
+    def _merge_agentic_info(notes: dict[str, Any], info: dict[str, Any]) -> None:
+        notes["mode_effective"] = "agentic"
+        notes["status"] = info.get("status") or "completed"
+        notes["iterations"] = int(info.get("iterations", 0) or 0)
+        notes["tools_called"] = list(info.get("tools_called", []) or [])
+        notes["trace"] = list(info.get("trace", []) or [])
+        notes["finalized"] = bool(info.get("finalized", False))
+        notes["fallback_reason"] = str(info.get("fallback_reason", "") or "")
