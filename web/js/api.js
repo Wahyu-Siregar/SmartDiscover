@@ -41,11 +41,6 @@ export function createPlaylist(payload) {
   });
 }
 
-export async function promptSuggestions(q) {
-  const params = new URLSearchParams({ q: q || "" });
-  return jsonFetch(`/api/prompt-suggestions?${params.toString()}`);
-}
-
 export function llmHealth() {
   return jsonFetch("/llm/health");
 }

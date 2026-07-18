@@ -39,34 +39,6 @@
     align-items: end;
   }
 
-  /* Prompt suggestions dropdown */
-  .textarea-wrapper { position: relative; }
-  .prompt-suggestions-dropdown {
-    position: absolute;
-    inset: calc(100% + 6px) 0 auto 0;
-    background: var(--canvas-elev);
-    border: 1px solid var(--rule);
-    border-radius: var(--radius-3);
-    box-shadow: var(--shadow-md);
-    z-index: 10;
-    max-height: 240px;
-    overflow-y: auto;
-    display: none;
-  }
-  .prompt-suggestions-dropdown.is-open { display: block; }
-  .prompt-suggestion-item {
-    display: block;
-    width: 100%;
-    text-align: left;
-    padding: 0.55rem 0.9rem;
-    font-size: var(--fs-small);
-    color: var(--muted-strong);
-    cursor: pointer;
-    transition: background var(--dur-1);
-  }
-  .prompt-suggestion-item:hover,
-  .prompt-suggestion-item.is-active { background: rgba(255, 91, 58, 0.1); color: var(--ink); }
-
   /* Quick prompt chips */
   .chip-row { display: flex; flex-wrap: wrap; gap: var(--space-2); }
   .chip {
