@@ -35,7 +35,8 @@ SmartDiscover is a multi-agent music discovery pipeline with optional agentic or
 flowchart TD
   A[User Prompt] --> B[1. Profiler Agent<br/>hybrid: heuristic + LLM<br/>JSON-mode + few-shot]
   B --> C[2. Spotify Discovery Agent<br/>recommendations + search<br/>+ audio features + artist genres]
-  C --> O{agentic_mode + AGENT_LOOP_ENABLED?}
+  C --> G[Bounded Genius metadata + E5 semantic scoring]
+  G --> O{agentic_mode + AGENT_LOOP_ENABLED?}
   O -- yes --> L[Orchestrator Agent<br/>tool-use loop max 3 iter:<br/>request_more_candidates,<br/>filter_by_audio,<br/>request_audio_features,<br/>finalize]
   O -- no --> D
   L --> D[3. Ranker Agent<br/>rich context: audio + genres<br/>min-output guard<br/>artist diversity]
@@ -112,6 +113,10 @@ python -m venv .venv
 pip install -r requirements.txt
 Copy-Item .env.example .env
 ```
+
+- Lyric-sensitive requests compare the preserved intent with Genius description metadata using `intfloat/multilingual-e5-small`.
+- E5 is loaded during startup and the first run may download about 471 MB of model weights.
+- The embedding score compares metadata descriptions only; SmartDiscover still does not retrieve or claim knowledge of full lyrics.
 
 For macOS/Linux:
 
@@ -300,6 +305,7 @@ Outputs aggregate intent metrics plus `meaning_required_match`, `lyrical_intent_
 - Language: Python
 - LLM runtime: OpenRouter
 - Music source: Spotify Web API
+- Embeddings: Sentence Transformers + multilingual E5
 - Frontend: HTML, CSS, JavaScript
 
 ## License
