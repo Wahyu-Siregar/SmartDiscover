@@ -59,6 +59,19 @@ GENRE_ALIASES: dict[str, str] = {
     "lofi": "lo-fi",
 }
 
+LYRIC_MEANING_CUES = (
+    "tentang ",
+    "bercerita",
+    "makna",
+    "arti lagu",
+    "lirik",
+    "about ",
+    "meaning",
+    "lyrics",
+    "story",
+    "perspective",
+)
+
 
 # Map app-level genre tags to Spotify Recommendations seed_genres (canonical).
 # Only safe-known seeds; unknown tags are filtered out at runtime against
@@ -213,6 +226,8 @@ class ProfilerAgent:
             target_audio=target_audio,
             seed_genres=seed_genres,
             decade=llm.decade or heuristic.decade,
+            lyrical_intent=heuristic.lyrical_intent or llm.lyrical_intent,
+            meaning_required=bool(heuristic.meaning_required or llm.meaning_required),
         )
 
     # ---- LLM path -----------------------------------------------------
@@ -224,8 +239,10 @@ class ProfilerAgent:
         system_prompt = (
             "You are Profiler Agent for SmartDiscover. "
             "Extract user intent into strict JSON with keys: mood, activity, genre, energy, language, locale, "
-            "strict_locale, confidence, target_audio, seed_genres, decade. "
+            "strict_locale, confidence, target_audio, seed_genres, decade, lyrical_intent, meaning_required. "
             "Rules: genre is array of strings; energy is one of low|medium|high; "
+            "meaning_required is true when the user asks about lyrical topic, story, message, or meaning; "
+            "lyrical_intent must preserve the user's complete request when meaning_required is true, otherwise empty. "
             "language is id or en (dominant language of input); "
             "locale is empty or a country-like target such as 'indonesia'; "
             "strict_locale is true when user explicitly asks for national/local-only songs (e.g. nationalism). "
@@ -298,6 +315,8 @@ class ProfilerAgent:
             seed_genres = seed_genres[:5]
 
             decade = str(data.get("decade", "")).strip().lower()
+            meaning_required = bool(data.get("meaning_required", False))
+            lyrical_intent = text.strip() if meaning_required else ""
 
             return IntentProfile(
                 mood=mood,
@@ -311,6 +330,8 @@ class ProfilerAgent:
                 target_audio=target_audio,
                 seed_genres=seed_genres,
                 decade=decade,
+                lyrical_intent=lyrical_intent,
+                meaning_required=meaning_required,
             )
         except Exception:
             return None
@@ -328,6 +349,7 @@ class ProfilerAgent:
         strict_locale = self._infer_strict_locale(lowered, locale)
         target_audio = self._derive_target_audio(mood, energy)
         seed_genres = self._derive_seed_genres(genres, mood)
+        meaning_required = self._requires_lyric_meaning(lowered)
         return IntentProfile(
             mood=mood,
             activity=activity,
@@ -340,6 +362,8 @@ class ProfilerAgent:
             target_audio=target_audio,
             seed_genres=seed_genres,
             decade="",
+            lyrical_intent=text.strip() if meaning_required else "",
+            meaning_required=meaning_required,
         )
 
     def _derive_target_audio(self, mood: str, energy: str) -> dict[str, float]:
@@ -424,3 +448,7 @@ class ProfilerAgent:
         if not locale:
             return False
         return any(cue in lowered for cue in STRICT_LOCALE_CUES)
+
+    @staticmethod
+    def _requires_lyric_meaning(lowered: str) -> bool:
+        return any(cue in lowered for cue in LYRIC_MEANING_CUES)

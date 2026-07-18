@@ -119,3 +119,73 @@ def test_agentic_mode_agentic_falls_back_when_llm_disabled(monkeypatch) -> None:
     assert agentic["mode_effective"] == "linear"
     assert agentic["status"] == "unavailable_llm"
     assert agentic["fallback_reason"] == "LLM is disabled."
+
+
+def test_pipeline_preselects_candidates_before_genius_lookup(monkeypatch) -> None:
+    pipeline = _seed_pipeline(monkeypatch)
+    pipeline.llm.api_key = ""
+    looked_up: list[str] = []
+
+    def fake_preselect(profile, candidates, limit):
+        assert limit >= 1
+        return [candidates[1]]
+
+    async def fake_enrich(profile, candidates, *, limit=None):
+        looked_up.extend(c.track_id for c in candidates)
+        return {"enabled": True, "lookups": len(candidates), "filled": 0, "source": "genius"}
+
+    monkeypatch.setattr(
+        pipeline.ranker,
+        "preselect_for_lyrics",
+        fake_preselect,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        pipeline.genius,
+        "enrich_candidates",
+        fake_enrich,
+        raising=False,
+    )
+
+    asyncio.run(
+        pipeline.run(RecommendRequest(text="calm study music", target_count=2, agentic_mode="linear"))
+    )
+
+    assert looked_up == ["b"]
+
+
+def test_refine_excludes_previous_tracks_before_genius_preselection(monkeypatch) -> None:
+    pipeline = _seed_pipeline(monkeypatch)
+    pipeline.llm.api_key = ""
+    preselected_from: list[str] = []
+
+    def fake_preselect(profile, candidates, limit):
+        preselected_from.extend(candidate.track_id for candidate in candidates)
+        return candidates
+
+    async def fake_enrich(profile, candidates, *, limit=None):
+        return {"enabled": True, "lookups": len(candidates), "filled": 0, "source": "genius"}
+
+    monkeypatch.setattr(
+        pipeline.ranker,
+        "preselect_for_lyrics",
+        fake_preselect,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        pipeline.genius,
+        "enrich_candidates",
+        fake_enrich,
+        raising=False,
+    )
+
+    asyncio.run(
+        pipeline._run_for_profile(
+            text="calm study music refined",
+            target_count=2,
+            agentic_mode="linear",
+            previous_track_ids={"a"},
+        )
+    )
+
+    assert preselected_from == ["b"]

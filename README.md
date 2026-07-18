@@ -182,7 +182,7 @@ Important: Spotify requires an exact match (scheme, domain, and path).
 | `GENIUS_LYRICS_CACHE_TTL_S` | no | `86400` | TTL for cached Genius lyric signals. |
 | `EVAL_PASS_THRESHOLD` | no | `0.7` | Pass threshold used by `evals/run_eval.py` exit code. |
 
-Note: the official Genius API does not return full lyric text. SmartDiscover uses Genius metadata, lyrics state, URL, and description preview as bounded lyric signals. Full lyric-text retrieval should use a licensed lyrics provider before storing or displaying lyrics.
+Note: the official Genius API does not return full lyric text. SmartDiscover derives bounded semantic signals only from Genius description metadata; title-only matches receive no inferred themes or sentiment. The system does not claim to know full lyric meaning. Full lyric-text retrieval should use a licensed lyrics provider before storing or displaying lyrics.
 
 ### Privacy disclosure
 
@@ -292,7 +292,7 @@ Offline regression for the Profiler agent.
 python -m evals.run_eval
 ```
 
-Outputs aggregate metrics (`mood_match`, `genre_recall`, `genre_jaccard`, `locale_match`, `strict_locale_match`, `overall`) and saves a per-prompt JSON to `evals/results/`. Exits `0` if `overall ≥ EVAL_PASS_THRESHOLD`. Edit `evals/golden_prompts.json` to update the gold set.
+Outputs aggregate intent metrics plus `meaning_required_match`, `lyrical_intent_recall`, and `semantic_overall`, then saves a per-prompt JSON to `evals/results/`. Exits `0` only when both `overall` and `semantic_overall` meet `EVAL_PASS_THRESHOLD`. Edit `evals/golden_prompts.json` to update the gold set.
 
 ## Tech Stack
 

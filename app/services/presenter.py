@@ -62,6 +62,8 @@ class PresenterAgent:
                     "sentiment": track.lyric_signals.get("sentiment", ""),
                     "summary": track.lyric_signals.get("summary", ""),
                     "match_score": track.lyric_signals.get("match_score", 0),
+                    "confidence": track.lyric_signals.get("confidence", 0),
+                    "source_kind": track.lyric_signals.get("source_kind", ""),
                 }
             rows.append(row)
 
@@ -69,6 +71,8 @@ class PresenterAgent:
             "You are Presenter Agent for SmartDiscover. "
             "For each candidate, write ONE concise sentence (max 18 words) explaining why it fits the user's intent. "
             "Use audio cues and genres when relevant. Match the user's language (id or en). "
+            "Lyric evidence is metadata-only unless source_kind says otherwise; do not claim "
+            "to know the full lyric meaning, and state uncertainty when confidence is low. "
             "Return strict JSON: {\"reasons\":[{\"idx\":int,\"why\":string}, ...]}"
         )
         user_prompt = (
@@ -103,9 +107,9 @@ class PresenterAgent:
         lyric_summary = ""
         if track.lyric_signals and track.lyric_signals.get("summary"):
             lyric_summary = (
-                f" Sinyal lirik: {track.lyric_signals['summary']}"
+                f" Metadata Genius: {track.lyric_signals['summary']}"
                 if profile.language == "id"
-                else f" Lyric signal: {track.lyric_signals['summary']}"
+                else f" Genius metadata: {track.lyric_signals['summary']}"
             )
         locale_hint = ""
         if profile.locale:

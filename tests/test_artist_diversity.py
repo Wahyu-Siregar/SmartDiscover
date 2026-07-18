@@ -79,3 +79,37 @@ def test_lyric_signals_boost_matching_tracks() -> None:
     )
 
     assert ranked[0].title == "Quiet Rindu"
+
+
+def test_lyric_preselection_uses_heuristic_fit_not_input_order() -> None:
+    llm = OpenRouterClient()
+    llm.api_key = ""
+    ranker = RankerAgent(llm)
+    generic = TrackCandidate(
+        title="Generic Hit",
+        artist="Popular",
+        popularity=100,
+    )
+    matching = TrackCandidate(
+        title="Sad Quiet Song",
+        artist="Relevant",
+        popularity=10,
+    )
+
+    selected = ranker.preselect_for_lyrics(
+        IntentProfile(mood="sad", energy="low", language="en"), [generic, matching], limit=1
+    )
+
+    assert selected == [matching]
+
+
+def test_lyric_signal_bonus_respects_evidence_confidence() -> None:
+    bonus = RankerAgent._lyric_signal_bonus(
+        IntentProfile(),
+        {
+            "match_score": 0.8,
+            "confidence": 0.25,
+        },
+    )
+
+    assert bonus == 0.2

@@ -209,7 +209,24 @@ class AgenticOrchestrator:
                     return validation_error
                 selected = [c for c in pool.values() if c.track_id in ids]
                 lyric_info = await self.genius.enrich_candidates(profile, selected, limit=min(len(selected), 10))
-                return {"updated": lyric_info.get("filled", 0), "lookups": lyric_info.get("lookups", 0)}
+                signals = [
+                    {
+                        "track_id": candidate.track_id,
+                        "themes": candidate.lyric_signals.get("themes", [])[:4],
+                        "sentiment": candidate.lyric_signals.get("sentiment", ""),
+                        "summary": str(candidate.lyric_signals.get("summary", ""))[:240],
+                        "match_score": candidate.lyric_signals.get("match_score", 0),
+                        "confidence": candidate.lyric_signals.get("confidence", 0),
+                        "source_kind": candidate.lyric_signals.get("source_kind", ""),
+                    }
+                    for candidate in selected
+                    if candidate.lyric_signals
+                ]
+                return {
+                    "signals": signals,
+                    "updated": lyric_info.get("filled", 0),
+                    "lookups": lyric_info.get("lookups", 0),
+                }
 
             if name == "finalize":
                 ids, validation_error = self._validated_known_track_ids(
@@ -241,7 +258,10 @@ class AgenticOrchestrator:
                     {
                         "themes": c.lyric_signals.get("themes", [])[:4],
                         "sentiment": c.lyric_signals.get("sentiment", ""),
+                        "summary": str(c.lyric_signals.get("summary", ""))[:240],
                         "match_score": c.lyric_signals.get("match_score", 0),
+                        "confidence": c.lyric_signals.get("confidence", 0),
+                        "source_kind": c.lyric_signals.get("source_kind", ""),
                     }
                     if c.lyric_signals
                     else None

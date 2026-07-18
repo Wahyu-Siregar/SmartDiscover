@@ -1,3 +1,5 @@
+import pytest
+
 from fastapi.testclient import TestClient
 
 from app.main import app, pipeline
@@ -5,6 +7,15 @@ from app.models import TrackCandidate
 
 
 client = TestClient(app)
+
+
+@pytest.fixture(autouse=True)
+def disable_external_services(monkeypatch):
+    async def fake_enrich_candidates(*args, **kwargs):
+        return {"enabled": False, "lookups": 0, "filled": 0, "source": "genius"}
+
+    monkeypatch.setattr(pipeline.llm, "api_key", "")
+    monkeypatch.setattr(pipeline.genius, "enrich_candidates", fake_enrich_candidates)
 
 
 def test_genre_only_prompt_prioritizes_matching_tracks(monkeypatch) -> None:
@@ -35,7 +46,7 @@ def test_genre_only_prompt_prioritizes_matching_tracks(monkeypatch) -> None:
         ]
         return candidates, {"variants": ["lagu batak"], "broadening_applied": False}
 
-    monkeypatch.setattr(pipeline.spotify, "search_tracks", fake_search_tracks)
+    monkeypatch.setattr(pipeline.spotify, "gather_candidates", fake_search_tracks)
 
     response = client.post("/recommend", json={"text": "lagu batak", "target_count": 3})
 
@@ -80,7 +91,7 @@ def test_genre_only_prompt_jawa_prioritizes_matching_tracks(monkeypatch) -> None
         ]
         return candidates, {"variants": ["lagu jawa"], "broadening_applied": False}
 
-    monkeypatch.setattr(pipeline.spotify, "search_tracks", fake_search_tracks)
+    monkeypatch.setattr(pipeline.spotify, "gather_candidates", fake_search_tracks)
 
     response = client.post("/recommend", json={"text": "lagu jawa", "target_count": 3})
 
@@ -125,7 +136,7 @@ def test_genre_only_prompt_minang_prioritizes_matching_tracks(monkeypatch) -> No
         ]
         return candidates, {"variants": ["lagu minang"], "broadening_applied": False}
 
-    monkeypatch.setattr(pipeline.spotify, "search_tracks", fake_search_tracks)
+    monkeypatch.setattr(pipeline.spotify, "gather_candidates", fake_search_tracks)
 
     response = client.post("/recommend", json={"text": "lagu minang", "target_count": 3})
 
