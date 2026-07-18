@@ -87,6 +87,7 @@ limiter = Limiter(key_func=get_remote_address)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    app.state.pipeline.semantic.load()
     timeout = httpx.Timeout(connect=10.0, read=45.0, write=20.0, pool=10.0)
     limits = httpx.Limits(max_keepalive_connections=20, max_connections=50)
     async with httpx.AsyncClient(timeout=timeout, limits=limits, follow_redirects=False) as client:

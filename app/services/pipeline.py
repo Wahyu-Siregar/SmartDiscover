@@ -13,6 +13,7 @@ from app.models import (
 )
 from app.services.agent_loop import AgenticOrchestrator
 from app.services.cache import TTLCache
+from app.services.embedding_service import E5SemanticMatcher
 from app.services.genius_client import GeniusClient
 from app.services.openrouter_client import OpenRouterClient
 from app.services.presenter import PresenterAgent
@@ -31,11 +32,13 @@ class RecommendationPipeline:
         llm: OpenRouterClient | None = None,
         spotify: SpotifyClient | None = None,
         genius: GeniusClient | None = None,
+        semantic: E5SemanticMatcher | None = None,
     ) -> None:
         self.llm = llm or OpenRouterClient()
         self.profiler = ProfilerAgent(self.llm)
         self.spotify = spotify or SpotifyClient()
-        self.genius = genius or GeniusClient()
+        self.semantic = semantic or E5SemanticMatcher()
+        self.genius = genius or GeniusClient(semantic_matcher=self.semantic)
         self.ranker = RankerAgent(self.llm)
         self.presenter = PresenterAgent(self.llm)
         self.orchestrator = AgenticOrchestrator(self.llm, self.spotify, self.genius)
