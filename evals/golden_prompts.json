@@ -38,5 +38,7 @@
   {"prompt": "lagu galau patah hati", "expected_mood": "sad", "expected_genre": [], "expected_locale": "", "expected_strict_locale": false},
   {"prompt": "happy birthday party fun ceria", "expected_mood": "happy", "expected_genre": [], "expected_locale": "", "expected_strict_locale": false},
   {"prompt": "classical piano focus", "expected_mood": "focus", "expected_genre": ["classical"], "expected_locale": "", "expected_strict_locale": false},
-  {"prompt": "lagu dangdut koplo joget", "expected_mood": "neutral", "expected_genre": ["jawa"], "expected_locale": "", "expected_strict_locale": false}
+  {"prompt": "lagu dangdut koplo joget", "expected_mood": "neutral", "expected_genre": ["jawa"], "expected_locale": "", "expected_strict_locale": false},
+  {"prompt": "lagu tentang memaafkan diri setelah gagal", "expected_mood": "neutral", "expected_genre": [], "expected_locale": "", "expected_strict_locale": false, "expected_meaning_required": true, "expected_lyrical_terms": ["memaafkan", "gagal"]},
+  {"prompt": "songs about rebuilding life after grief", "expected_mood": "neutral", "expected_genre": [], "expected_locale": "", "expected_strict_locale": false, "expected_meaning_required": true, "expected_lyrical_terms": ["rebuilding", "grief"]}
 ]

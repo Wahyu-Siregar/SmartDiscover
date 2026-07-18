@@ -126,7 +126,14 @@ def test_agent_loop_can_request_lyric_signals(monkeypatch) -> None:
     orchestrator = _make_orchestrator(monkeypatch, llm_responses)
 
     async def fake_enrich(profile, selected, *, limit=None):
-        selected[0].lyric_signals = {"themes": ["longing"], "sentiment": "sad", "match_score": 0.9}
+        selected[0].lyric_signals = {
+            "themes": ["longing"],
+            "sentiment": "sad",
+            "summary": "Metadata suggests longing.",
+            "match_score": 0.9,
+            "confidence": 0.45,
+            "source_kind": "metadata_description",
+        }
         return {"filled": 1, "lookups": 1}
 
     monkeypatch.setattr(orchestrator.genius, "enrich_candidates", fake_enrich, raising=False)
@@ -137,6 +144,8 @@ def test_agent_loop_can_request_lyric_signals(monkeypatch) -> None:
     refined, info = result
     assert "request_lyric_signals" in info["tools_called"]
     assert refined[0].lyric_signals["match_score"] == 0.9
+    trace_text = " ".join(str(item.get("result_summary", "")) for item in info["trace"])
+    assert "longing" in trace_text
 
 
 def test_agent_loop_guardrails_record_tool_failures(monkeypatch) -> None:

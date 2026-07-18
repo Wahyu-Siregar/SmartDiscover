@@ -22,6 +22,23 @@ THEME_KEYWORDS = {
 NEGATIVE_WORDS = {"sad", "cry", "tears", "broken", "lonely", "sedih", "sakit", "kecewa", "hancur"}
 POSITIVE_WORDS = {"happy", "love", "party", "dance", "win", "bright", "bahagia", "senang", "semangat"}
 ID_WORDS = {"aku", "kamu", "rindu", "cinta", "hati", "lagu", "sedih", "bahagia", "indonesia"}
+LYRICAL_INTENT_STOPWORDS = {
+    "lagu",
+    "song",
+    "songs",
+    "tentang",
+    "about",
+    "yang",
+    "dan",
+    "dengan",
+    "untuk",
+    "setelah",
+    "this",
+    "that",
+    "with",
+    "from",
+    "after",
+}
 
 
 class GeniusClient:
@@ -135,25 +152,29 @@ class GeniusClient:
         result: dict[str, Any],
         song: dict[str, Any],
     ) -> dict[str, Any]:
-        title = str(result.get("title") or track.title)
-        artist = str((result.get("primary_artist") or {}).get("name") or track.artist)
-        description = str(song.get("description_preview") or result.get("full_title") or "")
-        text = self._normalize_text(f"{title} {artist} {description}")
-        themes = self._themes(text)
-        sentiment = self._sentiment(text)
-        language = "id" if any(word in text for word in ID_WORDS) else profile.language
-        match_score = self._match_score(profile, text, themes, sentiment, language)
+        description = self._normalize_text(str(song.get("description_preview") or ""))
+        source_kind = "metadata_description" if description else "metadata_title_only"
+        themes = self._themes(description) if description else []
+        sentiment = self._sentiment(description) if description else "unknown"
+        language = (
+            "id"
+            if description and any(self._contains_term(description, word) for word in ID_WORDS)
+            else profile.language
+        )
+        match_score = self._match_score(profile, description, themes, sentiment, language) if description else 0.0
 
         return {
             "source": "genius",
+            "source_kind": source_kind,
             "source_url": result.get("url") or song.get("url") or "",
             "lyrics_state": song.get("lyrics_state") or result.get("lyrics_state") or "unknown",
             "language": language,
             "themes": themes,
             "sentiment": sentiment,
-            "summary": self._summary(language, themes, sentiment),
+            "summary": self._summary(language, themes, sentiment, source_kind),
             "match_score": match_score,
-            "note": "Genius API metadata signal; full lyrics are not returned by the official API.",
+            "confidence": 0.45 if description else 0.1,
+            "note": "Metadata-only signal; the official Genius API does not return full lyrics.",
         }
 
     @staticmethod
@@ -176,40 +197,72 @@ class GeniusClient:
             result = hit.get("result", {}) or {}
             hit_title = str(result.get("title") or "").lower()
             hit_artist = str((result.get("primary_artist") or {}).get("name") or "").lower()
-            if title and (title in hit_title or hit_title in title) and artist and artist in hit_artist:
+            if (
+                title
+                and hit_title
+                and (title in hit_title or hit_title in title)
+                and artist
+                and hit_artist
+                and artist in hit_artist
+            ):
                 return hit
-        return hits[0]
+        return None
 
     @staticmethod
-    def _themes(text: str) -> list[str]:
-        themes = [theme for theme, words in THEME_KEYWORDS.items() if any(word in text for word in words)]
+    def _contains_term(text: str, term: str) -> bool:
+        return bool(re.search(rf"(?<!\w){re.escape(term)}(?!\w)", text))
+
+    @classmethod
+    def _themes(cls, text: str) -> list[str]:
+        themes = [theme for theme, words in THEME_KEYWORDS.items() if any(cls._contains_term(text, word) for word in words)]
         return themes[:4]
 
-    @staticmethod
-    def _sentiment(text: str) -> str:
-        negative = sum(1 for word in NEGATIVE_WORDS if word in text)
-        positive = sum(1 for word in POSITIVE_WORDS if word in text)
+    @classmethod
+    def _sentiment(cls, text: str) -> str:
+        negative = sum(1 for word in NEGATIVE_WORDS if cls._contains_non_negated_term(text, word))
+        positive = sum(1 for word in POSITIVE_WORDS if cls._contains_non_negated_term(text, word))
         if negative > positive:
             return "sad"
         if positive > negative:
             return "positive"
         return "neutral"
 
-    @staticmethod
+    @classmethod
+    def _contains_non_negated_term(cls, text: str, term: str) -> bool:
+        if not cls._contains_term(text, term):
+            return False
+        negated = rf"(?<!\w)(?:not|no|never|without|tidak|bukan|tanpa)\s+(?:\w+\s+)?{re.escape(term)}(?!\w)"
+        return not re.search(negated, text)
+
+    @classmethod
+    def _lyrical_intent_overlap(cls, intent: str, text: str) -> float:
+        terms = {
+            term
+            for term in re.findall(r"\w+", cls._normalize_text(intent))
+            if len(term) >= 4 and term not in LYRICAL_INTENT_STOPWORDS
+        }
+        if not terms:
+            return 0.0
+        return sum(1 for term in terms if cls._contains_term(text, term)) / len(terms)
+
+    @classmethod
     def _match_score(
+        cls,
         profile: IntentProfile,
         text: str,
         themes: list[str],
         sentiment: str,
         language: str,
     ) -> float:
-        score = 0.35
+        score = 0.0
         if profile.mood and profile.mood.lower() in text:
             score += 0.2
         if profile.activity and profile.activity.lower() in text:
             score += 0.12
         if profile.genre and any(g.lower() in text for g in profile.genre):
             score += 0.12
+        if profile.meaning_required and profile.lyrical_intent:
+            score += 0.4 * cls._lyrical_intent_overlap(profile.lyrical_intent, text)
         if profile.language == language:
             score += 0.08
         if profile.mood in {"sad", "melancholy", "galau"} and sentiment == "sad":
@@ -221,8 +274,12 @@ class GeniusClient:
         return round(max(0.0, min(1.0, score)), 4)
 
     @staticmethod
-    def _summary(language: str, themes: list[str], sentiment: str) -> str:
+    def _summary(language: str, themes: list[str], sentiment: str, source_kind: str) -> str:
+        if source_kind == "metadata_title_only":
+            if language == "id":
+                return "Metadata Genius tidak memuat deskripsi; makna lagu belum dapat dinilai."
+            return "Genius metadata has no description; the song meaning cannot be assessed."
         theme_text = ", ".join(themes) if themes else "general song context"
         if language == "id":
-            return f"Sinyal Genius menunjukkan tema {theme_text} dengan sentimen {sentiment}."
-        return f"Genius signals suggest {theme_text} themes with {sentiment} sentiment."
+            return f"Metadata Genius mengindikasikan tema {theme_text} dengan sentimen {sentiment}."
+        return f"Genius metadata suggests {theme_text} themes with {sentiment} sentiment."

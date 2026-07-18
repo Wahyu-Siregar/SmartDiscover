@@ -24,6 +24,8 @@ class IntentProfile(BaseModel):
     target_audio: dict[str, float] = Field(default_factory=dict)
     seed_genres: list[str] = Field(default_factory=list)
     decade: str = ""
+    lyrical_intent: str = ""
+    meaning_required: bool = False
 
 
 class TrackCandidate(BaseModel):

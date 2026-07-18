@@ -69,3 +69,26 @@ def test_target_audio_filled_from_heuristic_when_llm_misses_keys(monkeypatch) ->
     assert profile.target_audio.get("energy") == 0.25  # LLM wins
     assert "tempo" in profile.target_audio  # heuristic fills missing
     assert profile.seed_genres  # union with heuristic mapping
+
+
+def test_lyric_sensitive_prompt_preserves_original_request_without_llm() -> None:
+    llm = OpenRouterClient()
+    llm.api_key = ""
+    agent = ProfilerAgent(llm)
+    text = "lagu tentang memaafkan diri setelah gagal"
+
+    profile = asyncio.run(agent.profile(text))
+
+    assert profile.meaning_required is True
+    assert profile.lyrical_intent == text
+
+
+def test_activity_prompt_does_not_require_lyric_meaning() -> None:
+    llm = OpenRouterClient()
+    llm.api_key = ""
+    agent = ProfilerAgent(llm)
+
+    profile = asyncio.run(agent.profile("musik fokus untuk bekerja"))
+
+    assert profile.meaning_required is False
+    assert profile.lyrical_intent == ""

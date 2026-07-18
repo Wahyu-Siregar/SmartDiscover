@@ -47,6 +47,20 @@ class RankerAgent:
 
         return self._enforce_artist_diversity(merged, top_k)
 
+    def preselect_for_lyrics(
+        self,
+        profile: IntentProfile,
+        candidates: list[TrackCandidate],
+        limit: int,
+    ) -> list[TrackCandidate]:
+        if limit <= 0:
+            return []
+        return sorted(
+            (self._score(profile, candidate) for candidate in self._dedupe(candidates)),
+            key=lambda candidate: candidate.score,
+            reverse=True,
+        )[:limit]
+
     # ---- LLM ranker --------------------------------------------------
 
     async def _rank_with_llm(
@@ -80,6 +94,8 @@ class RankerAgent:
                     "sentiment": c.lyric_signals.get("sentiment", ""),
                     "summary": c.lyric_signals.get("summary", ""),
                     "match_score": c.lyric_signals.get("match_score", 0),
+                    "confidence": c.lyric_signals.get("confidence", 0),
+                    "source_kind": c.lyric_signals.get("source_kind", ""),
                 }
             rows.append(row)
 
@@ -87,6 +103,8 @@ class RankerAgent:
             "You are Filter and Ranker Agent for music recommendations. "
             "Rank candidates by fit to intent_profile. Use provided audio features and genres "
             "and lyric signals to make objective decisions; do not rely solely on title or artist name. "
+            "Lyric evidence is metadata-only unless source_kind explicitly says otherwise; "
+            "do not claim to know the full lyric meaning and weigh low-confidence evidence lightly. "
             "Return JSON only with key 'ranked'. Each item must include idx, score (0..1), why (short, 1 sentence). "
             "Diversity rule: avoid more than 2 tracks from the same artist; prefer variety. "
             "If audio features deviate strongly from intent_profile.target_audio (e.g. energy mismatch >0.3), demote. "
@@ -287,6 +305,10 @@ class RankerAgent:
     @staticmethod
     def _lyric_signal_bonus(profile: IntentProfile, signals: dict[str, Any]) -> float:
         score = float(signals.get("match_score") or 0.0)
+        try:
+            confidence = float(signals.get("confidence", 1.0))
+        except (TypeError, ValueError):
+            confidence = 0.0
         themes = set(signals.get("themes") or [])
         sentiment = str(signals.get("sentiment") or "")
         if profile.mood in {"sad", "melancholy", "galau"} and sentiment == "sad":
@@ -295,4 +317,4 @@ class RankerAgent:
             score = max(score, 0.7)
         if profile.energy == "low" and themes.intersection({"calm", "heartbreak", "longing"}):
             score = max(score, 0.7)
-        return max(0.0, min(1.0, score))
+        return max(0.0, min(1.0, score)) * max(0.0, min(1.0, confidence))

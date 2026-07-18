@@ -123,12 +123,6 @@ class RecommendationPipeline:
         candidates, query_strategy, search_cache_hit = await self._get_candidates(profile, top_k)
         t2 = time.perf_counter()
 
-        lyric_info = await self.genius.enrich_candidates(
-            profile,
-            candidates,
-            limit=settings.genius_lyrics_top_n,
-        )
-
         # Quality gate: if profile confidence is dangerously low, log a warning.
         quality_warnings: list[str] = []
         if profile.confidence < 0.3:
@@ -143,6 +137,17 @@ class RecommendationPipeline:
                 quality_warnings.append(f"refine_previous_tracks_excluded ({excluded_count})")
             if len(candidates) < top_k:
                 quality_warnings.append(f"refine_candidate_pool_short ({len(candidates)} < {top_k})")
+
+        lyric_candidates = self.ranker.preselect_for_lyrics(
+            profile,
+            candidates,
+            settings.genius_lyrics_top_n,
+        )
+        lyric_info = await self.genius.enrich_candidates(
+            profile,
+            lyric_candidates,
+            limit=len(lyric_candidates),
+        )
 
         # Optional agentic loop (opt-in).
         agentic_notes = self._initial_agentic_notes(agentic_mode)

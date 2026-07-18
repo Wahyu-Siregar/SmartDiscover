@@ -1,7 +1,7 @@
 """SmartDiscover offline eval harness.
 
 Runs the Profiler against a curated golden prompt set and reports
-mood/genre/locale accuracy. Designed to be the regression gate for
+mood/genre/locale and lyric-intent accuracy. Designed to be the regression gate for
 prompt + model changes.
 
 Usage:
@@ -51,6 +51,13 @@ def _genre_recall(expected: list[str], actual: list[str]) -> float:
     return sum(1 for g in expected if g in sa) / len(expected)
 
 
+def _lyrical_intent_recall(expected_terms: list[str], actual: str) -> float:
+    if not expected_terms:
+        return 1.0
+    normalized = actual.lower()
+    return sum(1 for term in expected_terms if term.lower() in normalized) / len(expected_terms)
+
+
 async def _run() -> int:
     golden = _load_golden()
 
@@ -74,6 +81,13 @@ async def _run() -> int:
             genre_jaccard = _jaccard(entry["expected_genre"], profile.genre)
             locale_match = profile.locale == entry["expected_locale"]
             strict_match = bool(profile.strict_locale) == bool(entry["expected_strict_locale"])
+            semantic_row = "expected_meaning_required" in entry
+            meaning_required_match = (
+                int(bool(profile.meaning_required) == bool(entry["expected_meaning_required"]))
+                if semantic_row
+                else None
+            )
+            lyrical_intent_recall = _lyrical_intent_recall(entry.get("expected_lyrical_terms", []), profile.lyrical_intent) if semantic_row else None
 
             rows.append(
                 {
@@ -83,6 +97,8 @@ async def _run() -> int:
                         "genre": entry["expected_genre"],
                         "locale": entry["expected_locale"],
                         "strict_locale": entry["expected_strict_locale"],
+                        "meaning_required": entry.get("expected_meaning_required"),
+                        "lyrical_terms": entry.get("expected_lyrical_terms", []),
                     },
                     "actual": profile.model_dump(),
                     "scores": {
@@ -91,6 +107,8 @@ async def _run() -> int:
                         "genre_jaccard": round(genre_jaccard, 3),
                         "locale_match": int(locale_match),
                         "strict_match": int(strict_match),
+                        "meaning_required_match": meaning_required_match,
+                        "lyrical_intent_recall": lyrical_intent_recall,
                     },
                     "used_llm": agent.last_used_llm,
                 }
@@ -110,6 +128,13 @@ async def _run() -> int:
         "locale_match": sum(r["scores"]["locale_match"] for r in valid) / len(valid),
         "strict_match": sum(r["scores"]["strict_match"] for r in valid) / len(valid),
     }
+    semantic = [r for r in valid if r["scores"]["meaning_required_match"] is not None]
+    if semantic:
+        agg["meaning_required_match"] = sum(r["scores"]["meaning_required_match"] for r in semantic) / len(semantic)
+        agg["lyrical_intent_recall"] = sum(r["scores"]["lyrical_intent_recall"] for r in semantic) / len(semantic)
+        semantic_overall = (agg["meaning_required_match"] + agg["lyrical_intent_recall"]) / 2
+    else:
+        semantic_overall = 1.0
     overall = (agg["mood_match"] + agg["genre_recall"] + agg["locale_match"] + agg["strict_match"]) / 4
     threshold = settings.eval_pass_threshold
 
@@ -121,10 +146,13 @@ async def _run() -> int:
     print(f"  genre_jaccard       : {agg['genre_jaccard']:.3f}")
     print(f"  locale_match        : {agg['locale_match']:.3f}")
     print(f"  strict_locale_match : {agg['strict_match']:.3f}")
+    print(f"  meaning_required    : {agg.get('meaning_required_match', 1.0):.3f}")
+    print(f"  lyrical_intent      : {agg.get('lyrical_intent_recall', 1.0):.3f}")
     print(f"  overall             : {overall:.3f}  (threshold {threshold:.2f})")
+    print(f"  semantic_overall    : {semantic_overall:.3f}  (threshold {threshold:.2f})")
     print("=" * 60)
 
-    failures = [r for r in valid if r["scores"]["mood_match"] == 0 or r["scores"]["genre_recall"] < 0.5]
+    failures = [r for r in valid if r["scores"]["mood_match"] == 0 or r["scores"]["genre_recall"] < 0.5 or r["scores"]["meaning_required_match"] == 0 or r["scores"]["lyrical_intent_recall"] == 0]
     if failures:
         print(f"\n{len(failures)} weak rows (showing up to 8):")
         for r in failures[:8]:
@@ -137,7 +165,7 @@ async def _run() -> int:
     out_path = RESULTS_DIR / f"{int(time.time())}.json"
     out_path.write_text(
         json.dumps(
-            {"aggregate": agg, "overall": overall, "threshold": threshold, "rows": rows},
+            {"aggregate": agg, "overall": overall, "semantic_overall": semantic_overall, "threshold": threshold, "rows": rows},
             ensure_ascii=False,
             indent=2,
         ),
@@ -145,7 +173,7 @@ async def _run() -> int:
     )
     print(f"\nResults saved to {out_path}")
 
-    return 0 if overall >= threshold else 1
+    return 0 if overall >= threshold and semantic_overall >= threshold else 1
 
 
 if __name__ == "__main__":

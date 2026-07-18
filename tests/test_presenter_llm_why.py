@@ -76,3 +76,35 @@ def test_presenter_preserves_audio_features_for_frontend() -> None:
     items = asyncio.run(presenter.present(profile, tracks))
 
     assert items[0].audio_features == {"energy": 0.8, "valence": 0.6, "tempo": 120.0}
+
+
+def test_presenter_discloses_metadata_only_lyric_evidence(monkeypatch) -> None:
+    llm = OpenRouterClient()
+    llm.api_key = "test-key"
+    captured: dict[str, str] = {}
+
+    async def fake_chat_json(system_prompt, user_prompt, **kwargs):
+        captured["system"] = system_prompt
+        captured["user"] = user_prompt
+        return {"reasons": [{"idx": 1, "why": "Metadata suggests a reflective theme."}]}
+
+    monkeypatch.setattr(llm, "chat_json", fake_chat_json, raising=False)
+    presenter = PresenterAgent(llm)
+    track = TrackCandidate(
+        title="A",
+        artist="X",
+        lyric_signals={
+            "themes": ["longing"],
+            "sentiment": "sad",
+            "summary": "Metadata suggests longing.",
+            "match_score": 0.5,
+            "confidence": 0.45,
+            "source_kind": "metadata_description",
+        },
+    )
+
+    asyncio.run(presenter.present(IntentProfile(language="en"), [track]))
+
+    assert "metadata-only" in captured["system"].lower()
+    assert "do not claim" in captured["system"].lower()
+    assert "source_kind" in captured["user"]
