@@ -154,7 +154,8 @@ def test_agent_loop_can_request_lyric_signals(monkeypatch) -> None:
     assert "longing" in trace_text
     lyric_result = next(item["result"] for item in info["trace"] if item["name"] == "request_lyric_signals")
     assert lyric_result["signals"][0]["themes"] == ["longing"]
-    assert lyric_result["updated"] == 1
+    assert lyric_result["updated"] == 0
+    assert lyric_result["available"] == 1
     assert lyric_result["lookups"] == 0
 
 

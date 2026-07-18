@@ -223,7 +223,8 @@ class AgenticOrchestrator:
                 ]
                 return {
                     "signals": signals,
-                    "updated": len(signals),
+                    "updated": 0,
+                    "available": len(signals),
                     "lookups": 0,
                 }
 
