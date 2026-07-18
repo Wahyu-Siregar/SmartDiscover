@@ -9,6 +9,8 @@
     <img alt="Spotify API" src="https://img.shields.io/badge/Spotify_API-1DB954?style=for-the-badge&logo=spotify&logoColor=white" />
     <img alt="OpenRouter" src="https://img.shields.io/badge/OpenRouter-LLM-111827?style=for-the-badge" />
   </p>
+
+  <p><a href="https://smart-discover.vercel.app/">Live Deployment</a></p>
 </div>
 
 ---
@@ -26,6 +28,7 @@ SmartDiscover is a multi-agent music discovery pipeline with optional agentic or
 | Multi-agent pipeline | More targeted results than a single-step prompt |
 | Spotify integration | Real-time candidate tracks from Spotify's catalog |
 | Context-based ranking | Better alignment with user mood and activity |
+| Local semantic embeddings | E5 compares intent with bounded Genius metadata without extra LLM tokens |
 | Preview-aware retrieval | Better chance to get playable 30s previews |
 | Playlist-ready output | Recommendations can be executed immediately |
 
@@ -37,7 +40,7 @@ flowchart TD
   B --> C[2. Spotify Discovery Agent<br/>recommendations + search<br/>+ audio features + artist genres]
   C --> G[Bounded Genius metadata + E5 semantic scoring]
   G --> O{agentic_mode + AGENT_LOOP_ENABLED?}
-  O -- yes --> L[Orchestrator Agent<br/>tool-use loop max 3 iter:<br/>request_more_candidates,<br/>filter_by_audio,<br/>request_audio_features,<br/>finalize]
+  O -- yes --> L[Orchestrator Agent<br/>tool-use loop max 3 iter:<br/>request_more_candidates,<br/>request_lyric_signals,<br/>filter_by_audio,<br/>request_audio_features,<br/>finalize]
   O -- no --> D
   L --> D[3. Ranker Agent<br/>rich context: audio + genres<br/>min-output guard<br/>artist diversity]
   D --> E[4. Presenter Agent<br/>LLM-generated 'why' per track<br/>or template fallback]
@@ -59,6 +62,14 @@ flowchart TD
 - Supplements with playlist + adaptive search when shortfall.
 - Enriches every candidate with `GET /v1/audio-features` (tempo, energy, valence, danceability, acousticness, instrumentalness, loudness) and `GET /v1/artists` (artist genres) — all batched and parallel.
 - Dynamic `market` derived from intent locale.
+
+### Lyric-Metadata Semantic Layer
+
+- Enabled only when `GENIUS_LYRICS_ENABLED=true` and `GENIUS_ACCESS_TOKEN` is configured.
+- Enriches a bounded set of top candidates with Genius song-description metadata; the official API does not provide full lyric text.
+- For meaning-sensitive prompts, `intfloat/multilingual-e5-small` compares the preserved lyrical intent against available descriptions and produces request-local relative scores for the ranker.
+- E5 runs locally and does not spend OpenRouter tokens for semantic scoring. It loads at application startup and may download about 471 MB of model weights on first use.
+- Title-only metadata receives no inferred themes, sentiment, or semantic score. SmartDiscover therefore does not claim to understand the complete meaning of a song.
 
 ### 3. Orchestrator Agent (opt-in / runtime selectable)
 
@@ -104,7 +115,7 @@ http://127.0.0.1:8000/auth/callback
 ### 2) Clone the Repository and Install Dependencies
 
 ```powershell
-git clone https://github.com/wahyu-shiregaru/SmartDiscover.git
+git clone https://github.com/Wahyu-Siregar/SmartDiscover.git
 cd SmartDiscover
 
 python -m venv .venv
@@ -113,10 +124,6 @@ python -m venv .venv
 pip install -r requirements.txt
 Copy-Item .env.example .env
 ```
-
-- Lyric-sensitive requests compare the preserved intent with Genius description metadata using `intfloat/multilingual-e5-small`.
-- E5 is loaded during startup and the first run may download about 471 MB of model weights.
-- The embedding score compares metadata descriptions only; SmartDiscover still does not retrieve or claim knowledge of full lyrics.
 
 For macOS/Linux:
 
@@ -168,6 +175,7 @@ Important: Spotify requires an exact match (scheme, domain, and path).
 | `SPOTIFY_CLIENT_ID` / `SPOTIFY_CLIENT_SECRET` | yes (real catalog) | - | Spotify Web API credentials. If empty, app uses mock candidates. |
 | `SPOTIFY_REDIRECT_URI` | prod | derived | Exact callback URL registered in Spotify Dashboard. |
 | `SPOTIFY_DEFAULT_MARKET` | no | `ID` | Spotify market code fallback. Auto-derived from intent locale when possible. |
+| `TOP_K_DEFAULT` | no | `15` | Default recommendation count when `target_count` is omitted. |
 | `SESSION_SECRET` | **prod** | dev placeholder | Signs the HttpOnly OAuth session cookie. Use a long random string in production. |
 | `RATE_LIMIT_RECOMMEND` | no | `10/minute` | slowapi limit on `/recommend`. |
 | `APP_PUBLIC_URL` | no | `http://localhost:8000` | Public base URL; used as `HTTP-Referer` for OpenRouter. |
@@ -175,6 +183,7 @@ Important: Spotify requires an exact match (scheme, domain, and path).
 | `AGENT_LOOP_ENABLED` | no | `false` | Enable orchestrator tool-use loop by default. Individual requests can still force it with `agentic_mode="agentic"` when the LLM is enabled. |
 | `AGENT_LOOP_MAX_ITERATIONS` | no | `3` | Hard limit for orchestrator iterations. |
 | `AGENT_LOOP_TIMEOUT_S` | no | `30.0` | Wall-clock budget for the orchestrator. |
+| `AUDIO_FEATURE_CACHE_TTL_S` | no | `86400` | In-memory TTL for Spotify audio-feature responses. |
 | `GENIUS_ACCESS_TOKEN` | no | - | Genius API bearer token for optional lyric-signal enrichment. |
 | `GENIUS_LYRICS_ENABLED` | no | `false` | Enables bounded Genius lookup for top candidates only. |
 | `GENIUS_LYRICS_TOP_N` | no | `10` | Maximum candidates enriched per request to avoid token/API explosion. |
@@ -182,6 +191,8 @@ Important: Spotify requires an exact match (scheme, domain, and path).
 | `EVAL_PASS_THRESHOLD` | no | `0.7` | Pass threshold used by `evals/run_eval.py` exit code. |
 
 Note: the official Genius API does not return full lyric text. SmartDiscover derives bounded semantic signals only from Genius description metadata; title-only matches receive no inferred themes or sentiment. The system does not claim to know full lyric meaning. Full lyric-text retrieval should use a licensed lyrics provider before storing or displaying lyrics.
+
+SmartDiscover has no database-backed prompt history or analytics persistence. Runtime profile, search, and API caches are in-memory and expire automatically.
 
 No Spotify account data is stored by SmartDiscover. The Spotify access token lives only in an HttpOnly, signed session cookie scoped to your browser and never reaches `localStorage`.
 
@@ -192,6 +203,27 @@ uvicorn app.main:app --reload
 ```
 
 Open the app at http://127.0.0.1:8000/
+
+### Deploy on Vercel
+
+The current production deployment is [smart-discover.vercel.app](https://smart-discover.vercel.app/). Vercel detects the repository as a FastAPI project.
+
+`sentence-transformers` and PyTorch exceed Vercel's standard Python Function bundle limit, so enable Large Functions in the Vercel project for both Production and Preview:
+
+```ini
+VERCEL_SUPPORT_LARGE_FUNCTIONS="1"
+APP_PUBLIC_URL="https://smart-discover.vercel.app"
+SPOTIFY_REDIRECT_URI="https://smart-discover.vercel.app/callback"
+COOKIE_SECURE="true"
+```
+
+Add the remaining variables from `.env.example`, redeploy without the old build cache, then verify:
+
+```text
+https://smart-discover.vercel.app/health
+```
+
+The first cold start can be slower while E5 is downloaded and loaded. A successful deployment should return `{"status":"ok","service":"smartdiscover-api"}` from `/health`.
 
 ### Agentic demo mode
 
@@ -257,7 +289,7 @@ Notes:
 
 ## Fallback Mode
 
-If Spotify credentials are missing or invalid, the application still runs in fallback mode so the interface can be demonstrated.
+If Spotify credentials are missing, the application uses deterministic mock candidates so the interface and pipeline can still be demonstrated. Invalid credentials are reported as Spotify errors rather than silently replaced with mock data.
 
 ## API Endpoints
 
@@ -273,9 +305,15 @@ If Spotify credentials are missing or invalid, the application still runs in fal
 | `POST` | `/auth/logout` | Clears the session cookie. |
 | `POST` | `/create-playlist` | Saves the current selection as a Spotify playlist (requires session cookie). |
 
-## Eval harness
+## Tests and Eval Harness
 
-Offline regression for the Profiler agent.
+Run the unit tests:
+
+```powershell
+python -m pytest -q
+```
+
+Run the offline regression gate for intent profiling and lyric-intent extraction:
 
 ```powershell
 .\.venv\Scripts\Activate.ps1
@@ -290,8 +328,10 @@ Outputs aggregate intent metrics plus `meaning_required_match`, `lyrical_intent_
 - Language: Python
 - LLM runtime: OpenRouter
 - Music source: Spotify Web API
+- Optional lyric metadata: Genius API
 - Embeddings: Sentence Transformers + multilingual E5
 - Frontend: HTML, CSS, JavaScript
+- Deployment: Vercel Large Functions
 
 ## License
 
