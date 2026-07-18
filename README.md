@@ -10,7 +10,20 @@
     <img alt="OpenRouter" src="https://img.shields.io/badge/OpenRouter-LLM-111827?style=for-the-badge" />
   </p>
 
-  <p><a href="https://smart-discover.vercel.app/">Live Deployment</a></p>
+  <p>
+    <a href="https://smart-discover.vercel.app/"><img alt="Open Live App" src="https://img.shields.io/badge/Open-Live_App-1DB954?style=flat-square&logo=vercel&logoColor=white" /></a>
+    <a href="https://smart-discover.vercel.app/health"><img alt="API Health Endpoint" src="https://img.shields.io/badge/API-Health_Endpoint-2563EB?style=flat-square" /></a>
+    <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/License-MIT-F59E0B?style=flat-square" /></a>
+  </p>
+
+  <p>
+    <a href="#agentic-architecture">Architecture</a> &middot;
+    <a href="#quick-setup">Setup</a> &middot;
+    <a href="#deploy-on-vercel">Deploy</a> &middot;
+    <a href="#demo">Demo</a> &middot;
+    <a href="#api-endpoints">API</a> &middot;
+    <a href="#tests-and-eval-harness">Tests</a>
+  </p>
 </div>
 
 ---
@@ -23,30 +36,49 @@
 
 SmartDiscover is a multi-agent music discovery pipeline with optional agentic orchestration using LLM tool-calling. Instead of relying on literal keyword matching alone, the pipeline splits the process into intent analysis, candidate retrieval, ranking, and result presentation so recommendations feel more natural and contextual.
 
-| Core Value | Impact |
-|---|---|
-| Multi-agent pipeline | More targeted results than a single-step prompt |
-| Spotify integration | Real-time candidate tracks from Spotify's catalog |
-| Context-based ranking | Better alignment with user mood and activity |
-| Local semantic embeddings | E5 compares intent with bounded Genius metadata without extra LLM tokens |
-| Preview-aware retrieval | Better chance to get playable 30s previews |
-| Playlist-ready output | Recommendations can be executed immediately |
+| Layer | What it contributes | Built-in guardrail |
+|---|---|---|
+| Intent | Extracts mood, activity, genre, locale, audio targets, and lyric intent | Heuristics preserve high-confidence signals when the LLM misses them |
+| Discovery | Retrieves and enriches Spotify candidates in parallel | Adaptive search fills catalog shortfalls |
+| Semantics | E5 compares meaning-sensitive intent with bounded Genius descriptions | No full-lyrics claim and no extra OpenRouter tokens |
+| Orchestration | Optionally calls tools to improve the candidate pool | Three-iteration and 30-second hard limits |
+| Ranking | Combines audio features, genres, semantic signals, and diversity | Deterministic fallback and minimum-output guard |
+| Delivery | Explains results, previews tracks, and creates private playlists | OAuth token remains in a signed HttpOnly cookie |
 
 ## Agentic Architecture
 
 ```mermaid
 flowchart TD
-  A[User Prompt] --> B[1. Profiler Agent<br/>hybrid: heuristic + LLM<br/>JSON-mode + few-shot]
-  B --> C[2. Spotify Discovery Agent<br/>recommendations + search<br/>+ audio features + artist genres]
-  C --> G[Bounded Genius metadata + E5 semantic scoring]
-  G --> O{agentic_mode + AGENT_LOOP_ENABLED?}
-  O -- yes --> L[Orchestrator Agent<br/>tool-use loop max 3 iter:<br/>request_more_candidates,<br/>request_lyric_signals,<br/>filter_by_audio,<br/>request_audio_features,<br/>finalize]
-  O -- no --> D
-  L --> D[3. Ranker Agent<br/>rich context: audio + genres<br/>min-output guard<br/>artist diversity]
-  D --> E[4. Presenter Agent<br/>LLM-generated 'why' per track<br/>or template fallback]
-  E --> F[/recommend response]
-  F -. user types 'lebih upbeat' .-> R[/refine endpoint<br/>stateless re-profile + re-rank/]
-  R --> F
+  U["User prompt"] --> P["1 - Profiler Agent<br/>heuristics + LLM<br/>structured intent profile"]
+  P --> S["2 - Spotify Discovery<br/>recommendations + adaptive search<br/>audio features + artist genres"]
+  S --> Q{"Meaning-sensitive<br/>request?"}
+
+  Q -- "Yes + Genius enabled" --> G["Bounded Genius metadata<br/>official song descriptions"]
+  G --> E5["Semantic match<br/>multilingual E5 - in-process"]
+  Q -- "No or disabled" --> M{"Agentic mode<br/>active?"}
+  E5 --> M
+
+  M -- "Yes" --> O["3 - Orchestrator Agent<br/>bounded tool loop<br/>max 3 iterations - 30 seconds"]
+  M -- "No / fallback" --> R["4 - Ranker Agent<br/>audio + genres + semantics<br/>minimum output + diversity"]
+  O --> R
+  R --> V["5 - Presenter Agent<br/>one batched LLM explanation<br/>or deterministic template"]
+  V --> OUT["POST /recommend<br/>ranked, playlist-ready results"]
+  OUT -. "Refinement text" .-> REF["6 - POST /refine<br/>merge intent - exclude seen tracks"]
+  REF -. "Rerun pipeline" .-> P
+
+  classDef entry fill:#111827,stroke:#60A5FA,color:#FFFFFF;
+  classDef discovery fill:#0F766E,stroke:#5EEAD4,color:#FFFFFF;
+  classDef semantic fill:#6D28D9,stroke:#C4B5FD,color:#FFFFFF;
+  classDef decision fill:#78350F,stroke:#FBBF24,color:#FFFFFF;
+  classDef agent fill:#1E3A8A,stroke:#93C5FD,color:#FFFFFF;
+  classDef endpoint fill:#9F1239,stroke:#FDA4AF,color:#FFFFFF;
+
+  class U entry;
+  class P,S discovery;
+  class G,E5 semantic;
+  class Q,M decision;
+  class O,R,V agent;
+  class OUT,REF endpoint;
 ```
 
 ### 1. Profiler Agent
@@ -68,8 +100,13 @@ flowchart TD
 - Enabled only when `GENIUS_LYRICS_ENABLED=true` and `GENIUS_ACCESS_TOKEN` is configured.
 - Enriches a bounded set of top candidates with Genius song-description metadata; the official API does not provide full lyric text.
 - For meaning-sensitive prompts, `intfloat/multilingual-e5-small` compares the preserved lyrical intent against available descriptions and produces request-local relative scores for the ranker.
-- E5 runs locally and does not spend OpenRouter tokens for semantic scoring. It loads at application startup and may download about 471 MB of model weights on first use.
+- E5 runs in-process and does not spend OpenRouter tokens for semantic scoring. It loads at application startup and may download about 471 MB of model weights on the first startup.
 - Title-only metadata receives no inferred themes, sentiment, or semantic score. SmartDiscover therefore does not claim to understand the complete meaning of a song.
+
+| SmartDiscover can | SmartDiscover does not claim |
+|---|---|
+| Compare a user's lyrical intent with available official description metadata | Read, store, or understand the complete lyrics |
+| Pass a request-local semantic score to the ranker | Treat a title-only match as evidence of theme or sentiment |
 
 ### 3. Orchestrator Agent (opt-in / runtime selectable)
 
@@ -217,7 +254,7 @@ SPOTIFY_REDIRECT_URI="https://smart-discover.vercel.app/callback"
 COOKIE_SECURE="true"
 ```
 
-Add the remaining variables from `.env.example`, redeploy without the old build cache, then verify:
+Add the remaining variables from `.env.example`, redeploy, then verify:
 
 ```text
 https://smart-discover.vercel.app/health
@@ -257,7 +294,7 @@ After generating recommendations, you can save them directly to your Spotify acc
 
 ### User Flow
 
-1. **Connect Spotify**: Click the **Connect Spotify** button in the sidebar and sign in to Spotify.
+1. **Connect Spotify**: Click the **Connect Spotify** button in the top ribbon and sign in to Spotify.
 2. **Authorize Access**: Approve playlist permissions when prompted.
 3. **Generate Recommendations**: Run your prompt as usual.
 4. **Save as Spotify Playlist**: Click **Save as Spotify Playlist** to create a playlist from the selected tracks.
