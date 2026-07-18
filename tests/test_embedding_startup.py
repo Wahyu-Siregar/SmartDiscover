@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from app.main import lifespan
+from app.services.genius_client import GeniusClient
 from app.services.pipeline import RecommendationPipeline
 
 
@@ -38,3 +39,21 @@ def test_lifespan_propagates_e5_load_failure() -> None:
     with pytest.raises(RuntimeError, match="model unavailable"):
         with TestClient(_lifespan_app(matcher)):
             pass
+
+
+def test_pipeline_adopts_injected_genius_semantic_matcher() -> None:
+    matcher = _FakeSemanticMatcher()
+    genius = GeniusClient(semantic_matcher=matcher)
+
+    pipeline = RecommendationPipeline(genius=genius)
+
+    assert pipeline.semantic is matcher
+
+
+def test_pipeline_rejects_conflicting_explicit_semantic_matchers() -> None:
+    genius_matcher = _FakeSemanticMatcher()
+    explicit_matcher = _FakeSemanticMatcher()
+    genius = GeniusClient(semantic_matcher=genius_matcher)
+
+    with pytest.raises(ValueError, match="semantic matcher"):
+        RecommendationPipeline(genius=genius, semantic=explicit_matcher)

@@ -44,6 +44,10 @@ class GeniusClient:
         self._client = client
 
     @property
+    def semantic_matcher(self) -> E5SemanticMatcher:
+        return self._semantic_matcher
+
+    @property
     def enabled(self) -> bool:
         return bool(settings.genius_lyrics_enabled and settings.genius_access_token)
 

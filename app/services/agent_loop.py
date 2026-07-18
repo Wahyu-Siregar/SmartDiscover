@@ -42,7 +42,7 @@ TOOL_DEFINITIONS = [
         "type": "function",
         "function": {
             "name": "request_lyric_signals",
-            "description": "Fetch bounded Genius lyric metadata/signals for selected tracks only. Use when lyrics/themes are important to the intent.",
+            "description": "Return already-computed Genius lyric metadata/signals for selected tracks. No new lookups are performed.",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -208,7 +208,6 @@ class AgenticOrchestrator:
                 if validation_error:
                     return validation_error
                 selected = [c for c in pool.values() if c.track_id in ids]
-                lyric_info = await self.genius.enrich_candidates(profile, selected, limit=min(len(selected), 10))
                 signals = [
                     {
                         "track_id": candidate.track_id,
@@ -224,8 +223,8 @@ class AgenticOrchestrator:
                 ]
                 return {
                     "signals": signals,
-                    "updated": lyric_info.get("filled", 0),
-                    "lookups": lyric_info.get("lookups", 0),
+                    "updated": len(signals),
+                    "lookups": 0,
                 }
 
             if name == "finalize":
