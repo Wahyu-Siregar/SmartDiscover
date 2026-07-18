@@ -19,15 +19,9 @@ class _FakeSemanticMatcher:
             raise self.error
 
 
-class _PromptStoreStub:
-    def attach_client(self, _client) -> None:
-        pass
-
-
 def _lifespan_app(matcher: _FakeSemanticMatcher) -> FastAPI:
     test_app = FastAPI(lifespan=lifespan)
     test_app.state.pipeline = RecommendationPipeline(semantic=matcher)
-    test_app.state.prompt_store = _PromptStoreStub()
     return test_app
 
 

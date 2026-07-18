@@ -1,4 +1,4 @@
-"""Validate input cap and rate limiting on /recommend & /api/prompt-suggestions."""
+"""Validate input caps and rate limiting on /recommend."""
 from __future__ import annotations
 
 import pytest
