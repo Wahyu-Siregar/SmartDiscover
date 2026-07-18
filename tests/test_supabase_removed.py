@@ -30,10 +30,20 @@ def test_prompt_history_ui_is_removed_but_static_quick_prompts_remain() -> None:
     main_js = (ROOT / "web/js/main.js").read_text(encoding="utf-8")
     api_js = (ROOT / "web/js/api.js").read_text(encoding="utf-8")
     forms_css = (ROOT / "web/css/components/forms.css").read_text(encoding="utf-8")
+    ui_sources = "\n".join((html, main_js, api_js, forms_css))
 
-    assert "promptSuggestions" not in html
-    assert "bindPromptSuggestions" not in main_js
-    assert "promptSuggestions" not in api_js
-    assert "prompt-suggestions" not in forms_css
+    for artifact in (
+        "promptSuggestions",
+        "bindPromptSuggestions",
+        "prompt-suggestions",
+        "prompt-suggestion",
+        "prompt-suggestion-item",
+        "textarea-wrapper",
+        "ArrowDown",
+        "ArrowUp",
+    ):
+        assert artifact not in ui_sources
     assert 'id="quickPrompts"' in html
+    assert html.count('class="chip"') == 3
+    assert "function bindQuickPrompts()" in main_js
     assert "bindQuickPrompts();" in main_js
