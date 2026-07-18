@@ -16,7 +16,6 @@ from slowapi.util import get_remote_address
 from app.config import settings
 from app.models import RecommendRequest, RecommendResponse, RefineRequest
 from app.services.pipeline import RecommendationPipeline
-from app.services.prompt_store import PromptStore
 
 
 logging.basicConfig(
@@ -87,6 +86,7 @@ limiter = Limiter(key_func=get_remote_address)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    app.state.pipeline.semantic.load()
     timeout = httpx.Timeout(connect=10.0, read=45.0, write=20.0, pool=10.0)
     limits = httpx.Limits(max_keepalive_connections=20, max_connections=50)
     async with httpx.AsyncClient(timeout=timeout, limits=limits, follow_redirects=False) as client:
@@ -94,7 +94,6 @@ async def lifespan(app: FastAPI):
         app.state.pipeline.llm.attach_client(client)
         app.state.pipeline.spotify.attach_client(client)
         app.state.pipeline.genius.attach_client(client)
-        app.state.prompt_store.attach_client(client)
         logger.info("SmartDiscover ready (model=%s)", app.state.pipeline.llm.model)
         yield
 
@@ -110,8 +109,6 @@ app.state.pipeline = RecommendationPipeline()
 app.state.pipeline.llm.attach_client(_default_http_client)
 app.state.pipeline.spotify.attach_client(_default_http_client)
 app.state.pipeline.genius.attach_client(_default_http_client)
-app.state.prompt_store = PromptStore()
-app.state.prompt_store.attach_client(_default_http_client)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, lambda req, exc: Response(
     content='{"detail":"rate limit exceeded"}',
@@ -122,15 +119,10 @@ app.mount("/static", StaticFiles(directory="web"), name="static")
 
 # Backward-compatible module-level aliases (used by tests and external imports).
 pipeline = app.state.pipeline
-prompt_store = app.state.prompt_store
 
 
 def get_pipeline(request: Request) -> RecommendationPipeline:
     return request.app.state.pipeline
-
-
-def get_prompt_store(request: Request) -> PromptStore:
-    return request.app.state.prompt_store
 
 
 def get_spotify_token(request: Request) -> str:
@@ -184,42 +176,14 @@ async def llm_health(pipeline: RecommendationPipeline = Depends(get_pipeline)) -
     return {"service": "openrouter", "model": pipeline.llm.model, **status}
 
 
-@app.get("/api/prompt-suggestions")
-@limiter.limit(settings.rate_limit_suggestions)
-async def get_prompt_suggestions(
-    request: Request,
-    q: str = "",
-    store: PromptStore = Depends(get_prompt_store),
-) -> dict:
-    if not store.enabled:
-        return {"suggestions": []}
-    safe_q = (q or "")[:100]
-    suggestions = await store.search_suggestions(safe_q, limit=15)
-    return {"suggestions": suggestions}
-
-
 @app.post("/recommend", response_model=RecommendResponse)
 @limiter.limit(settings.rate_limit_recommend)
 async def recommend(
     request: Request,
     payload: RecommendRequest,
     pipeline: RecommendationPipeline = Depends(get_pipeline),
-    store: PromptStore = Depends(get_prompt_store),
 ) -> RecommendResponse:
-    response = await pipeline.run(payload)
-
-    try:
-        await store.save_prompt(
-            prompt_text=payload.text,
-            target_count=payload.target_count,
-            source="web",
-            client_ip=request.client.host if request.client else None,
-            user_agent=request.headers.get("user-agent"),
-        )
-    except Exception as exc:  # save_prompt already swallows, but be defensive
-        logger.warning("Failed to persist prompt to Supabase: %s", exc)
-
-    return response
+    return await pipeline.run(payload)
 
 
 @app.post("/refine", response_model=RecommendResponse)

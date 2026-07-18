@@ -1,3 +1,4 @@
+from copy import deepcopy
 import logging
 import time
 from typing import Any
@@ -13,6 +14,7 @@ from app.models import (
 )
 from app.services.agent_loop import AgenticOrchestrator
 from app.services.cache import TTLCache
+from app.services.embedding_service import E5SemanticMatcher
 from app.services.genius_client import GeniusClient
 from app.services.openrouter_client import OpenRouterClient
 from app.services.presenter import PresenterAgent
@@ -31,11 +33,23 @@ class RecommendationPipeline:
         llm: OpenRouterClient | None = None,
         spotify: SpotifyClient | None = None,
         genius: GeniusClient | None = None,
+        semantic: E5SemanticMatcher | None = None,
     ) -> None:
         self.llm = llm or OpenRouterClient()
         self.profiler = ProfilerAgent(self.llm)
         self.spotify = spotify or SpotifyClient()
-        self.genius = genius or GeniusClient()
+        if (
+            genius is not None
+            and semantic is not None
+            and genius.semantic_matcher is not semantic
+        ):
+            raise ValueError("Injected GeniusClient and semantic matcher must share the same semantic matcher")
+        self.semantic = (
+            semantic
+            if semantic is not None
+            else genius.semantic_matcher if genius is not None else E5SemanticMatcher()
+        )
+        self.genius = genius if genius is not None else GeniusClient(semantic_matcher=self.semantic)
         self.ranker = RankerAgent(self.llm)
         self.presenter = PresenterAgent(self.llm)
         self.orchestrator = AgenticOrchestrator(self.llm, self.spotify, self.genius)
@@ -74,10 +88,12 @@ class RecommendationPipeline:
         key = (self._profile_signature(profile), top_k)
         cached = self._search_cache.get(key)
         if cached is not None:
-            return cached[0], cached[1], True
+            candidates, query_strategy = deepcopy(cached)
+            return candidates, query_strategy, True
         result = await self.spotify.gather_candidates(profile, top_k)
-        self._search_cache.set(key, result)
-        return result[0], result[1], False
+        self._search_cache.set(key, deepcopy(result))
+        candidates, query_strategy = deepcopy(result)
+        return candidates, query_strategy, False
 
     async def run(self, payload: RecommendRequest) -> RecommendResponse:
         return await self._run_for_profile(

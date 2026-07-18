@@ -35,7 +35,8 @@ SmartDiscover is a multi-agent music discovery pipeline with optional agentic or
 flowchart TD
   A[User Prompt] --> B[1. Profiler Agent<br/>hybrid: heuristic + LLM<br/>JSON-mode + few-shot]
   B --> C[2. Spotify Discovery Agent<br/>recommendations + search<br/>+ audio features + artist genres]
-  C --> O{agentic_mode + AGENT_LOOP_ENABLED?}
+  C --> G[Bounded Genius metadata + E5 semantic scoring]
+  G --> O{agentic_mode + AGENT_LOOP_ENABLED?}
   O -- yes --> L[Orchestrator Agent<br/>tool-use loop max 3 iter:<br/>request_more_candidates,<br/>filter_by_audio,<br/>request_audio_features,<br/>finalize]
   O -- no --> D
   L --> D[3. Ranker Agent<br/>rich context: audio + genres<br/>min-output guard<br/>artist diversity]
@@ -113,6 +114,10 @@ pip install -r requirements.txt
 Copy-Item .env.example .env
 ```
 
+- Lyric-sensitive requests compare the preserved intent with Genius description metadata using `intfloat/multilingual-e5-small`.
+- E5 is loaded during startup and the first run may download about 471 MB of model weights.
+- The embedding score compares metadata descriptions only; SmartDiscover still does not retrieve or claim knowledge of full lyrics.
+
 For macOS/Linux:
 
 ```bash
@@ -133,12 +138,9 @@ SPOTIFY_DEFAULT_MARKET="ID"
 
 # Required in production. Long random string (>=32 chars).
 SESSION_SECRET=""
-# Salt used to hash client IPs before persisting analytics.
-IP_HASH_SALT=""
 
-# Rate limits (slowapi syntax).
+# Rate limit (slowapi syntax).
 RATE_LIMIT_RECOMMEND="10/minute"
-RATE_LIMIT_SUGGESTIONS="30/minute"
 
 # Public base URL of this app (used for OpenRouter HTTP-Referer).
 APP_PUBLIC_URL="http://localhost:8000"
@@ -167,12 +169,9 @@ Important: Spotify requires an exact match (scheme, domain, and path).
 | `SPOTIFY_REDIRECT_URI` | prod | derived | Exact callback URL registered in Spotify Dashboard. |
 | `SPOTIFY_DEFAULT_MARKET` | no | `ID` | Spotify market code fallback. Auto-derived from intent locale when possible. |
 | `SESSION_SECRET` | **prod** | dev placeholder | Signs the HttpOnly OAuth session cookie. Use a long random string in production. |
-| `IP_HASH_SALT` | prod | dev placeholder | Salt used to SHA256-hash client IPs before storing analytics. |
 | `RATE_LIMIT_RECOMMEND` | no | `10/minute` | slowapi limit on `/recommend`. |
-| `RATE_LIMIT_SUGGESTIONS` | no | `30/minute` | slowapi limit on `/api/prompt-suggestions`. |
 | `APP_PUBLIC_URL` | no | `http://localhost:8000` | Public base URL; used as `HTTP-Referer` for OpenRouter. |
 | `COOKIE_SECURE` | prod | `false` | Set `true` when serving behind HTTPS. |
-| `SUPABASE_URL` / `SUPABASE_API_KEY` | no | - | Optional analytics destination for prompt logs. |
 | `AGENT_LOOP_ENABLED` | no | `false` | Enable orchestrator tool-use loop by default. Individual requests can still force it with `agentic_mode="agentic"` when the LLM is enabled. |
 | `AGENT_LOOP_MAX_ITERATIONS` | no | `3` | Hard limit for orchestrator iterations. |
 | `AGENT_LOOP_TIMEOUT_S` | no | `30.0` | Wall-clock budget for the orchestrator. |
@@ -184,15 +183,7 @@ Important: Spotify requires an exact match (scheme, domain, and path).
 
 Note: the official Genius API does not return full lyric text. SmartDiscover derives bounded semantic signals only from Genius description metadata; title-only matches receive no inferred themes or sentiment. The system does not claim to know full lyric meaning. Full lyric-text retrieval should use a licensed lyrics provider before storing or displaying lyrics.
 
-### Privacy disclosure
-
-When Supabase is configured, each `/recommend` request persists:
-
-- The prompt text and target count.
-- A SHA256 hash of the client IP (salted with `IP_HASH_SALT`, **not reversible**).
-- The User-Agent header.
-
-No Spotify account data is ever stored. The Spotify access token lives only in an HttpOnly, signed session cookie scoped to your browser; it never reaches `localStorage` or analytics.
+No Spotify account data is stored by SmartDiscover. The Spotify access token lives only in an HttpOnly, signed session cookie scoped to your browser and never reaches `localStorage`.
 
 ### 4) Run the Application
 
@@ -277,7 +268,6 @@ If Spotify credentials are missing or invalid, the application still runs in fal
 | `GET`  | `/llm/health` | OpenRouter reachability. |
 | `POST` | `/recommend` | Run the full pipeline. Body: `{text, target_count?, agentic_mode?}` where `agentic_mode` is `auto`, `agentic`, or `linear`. |
 | `POST` | `/refine` | Multi-turn refine. Body: `{previous_profile, previous_track_ids, refinement_text, target_count?, agentic_mode?}`. |
-| `GET`  | `/api/prompt-suggestions?q=` | Recent-prompt autocomplete (rate-limited). |
 | `GET`  | `/auth/login` → `/auth/callback` | Spotify OAuth (HttpOnly cookie session, CSRF-protected). |
 | `GET`  | `/auth/status` | Returns `{connected, expires_at}`. |
 | `POST` | `/auth/logout` | Clears the session cookie. |
@@ -300,6 +290,7 @@ Outputs aggregate intent metrics plus `meaning_required_match`, `lyrical_intent_
 - Language: Python
 - LLM runtime: OpenRouter
 - Music source: Spotify Web API
+- Embeddings: Sentence Transformers + multilingual E5
 - Frontend: HTML, CSS, JavaScript
 
 ## License

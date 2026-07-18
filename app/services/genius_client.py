@@ -7,6 +7,7 @@ import httpx
 from app.config import settings
 from app.models import IntentProfile, TrackCandidate
 from app.services.cache import TTLCache
+from app.services.embedding_service import E5SemanticMatcher
 
 
 THEME_KEYWORDS = {
@@ -22,30 +23,18 @@ THEME_KEYWORDS = {
 NEGATIVE_WORDS = {"sad", "cry", "tears", "broken", "lonely", "sedih", "sakit", "kecewa", "hancur"}
 POSITIVE_WORDS = {"happy", "love", "party", "dance", "win", "bright", "bahagia", "senang", "semangat"}
 ID_WORDS = {"aku", "kamu", "rindu", "cinta", "hati", "lagu", "sedih", "bahagia", "indonesia"}
-LYRICAL_INTENT_STOPWORDS = {
-    "lagu",
-    "song",
-    "songs",
-    "tentang",
-    "about",
-    "yang",
-    "dan",
-    "dengan",
-    "untuk",
-    "setelah",
-    "this",
-    "that",
-    "with",
-    "from",
-    "after",
-}
 
 
 class GeniusClient:
     BASE_URL = "https://api.genius.com"
 
-    def __init__(self, client: httpx.AsyncClient | None = None) -> None:
+    def __init__(
+        self,
+        client: httpx.AsyncClient | None = None,
+        semantic_matcher: E5SemanticMatcher | None = None,
+    ) -> None:
         self._client = client
+        self._semantic_matcher = semantic_matcher or E5SemanticMatcher()
         self._cache: TTLCache[dict[str, Any] | None] = TTLCache(
             max_size=512,
             ttl_seconds=float(settings.genius_lyrics_cache_ttl_s),
@@ -53,6 +42,10 @@ class GeniusClient:
 
     def attach_client(self, client: httpx.AsyncClient) -> None:
         self._client = client
+
+    @property
+    def semantic_matcher(self) -> E5SemanticMatcher:
+        return self._semantic_matcher
 
     @property
     def enabled(self) -> bool:
@@ -81,21 +74,47 @@ class GeniusClient:
             return {"enabled": True, "lookups": 0, "filled": 0, "source": "genius"}
 
         selected = candidates[:safe_limit]
-        signals = await asyncio.gather(
-            *[self.lookup_track(profile, track) for track in selected],
+        metadata_rows = await asyncio.gather(
+            *[self.lookup_track(track) for track in selected],
             return_exceptions=True,
         )
 
         filled = 0
-        for track, signal in zip(selected, signals):
-            if isinstance(signal, Exception) or not signal:
+        semantic_rows: list[tuple[dict[str, Any], str]] = []
+        for track, metadata in zip(selected, metadata_rows):
+            if isinstance(metadata, Exception) or not metadata:
                 continue
+            result = metadata.get("result", {}) or {}
+            song = metadata.get("song", {}) or {}
+            signal = self._build_signal(profile, track, result, song)
             track.lyric_signals = signal
             filled += 1
+            description = self._description_text(song)
+            if profile.meaning_required and profile.lyrical_intent and description:
+                semantic_rows.append((signal, description))
+
+        if semantic_rows:
+            passages = [description for _, description in semantic_rows]
+            raw_scores = await asyncio.to_thread(
+                self._semantic_matcher.score,
+                profile.lyrical_intent,
+                passages,
+            )
+            if len(raw_scores) != len(semantic_rows):
+                raise RuntimeError("E5 matcher returned an unexpected score count")
+            relative_scores = self._relative_scores(raw_scores)
+            for (signal, _), raw_score, relative_score in zip(
+                semantic_rows,
+                raw_scores,
+                relative_scores,
+            ):
+                signal["semantic_score"] = round(float(raw_score), 6)
+                signal["semantic_model"] = self._semantic_matcher.MODEL_ID
+                signal["match_score"] = relative_score
 
         return {"enabled": True, "lookups": safe_limit, "filled": filled, "source": "genius"}
 
-    async def lookup_track(self, profile: IntentProfile, track: TrackCandidate) -> dict[str, Any] | None:
+    async def lookup_track(self, track: TrackCandidate) -> dict[str, Any] | None:
         key = self._cache_key(track)
         cached = self._cache.get(key)
         if cached is not None:
@@ -114,18 +133,15 @@ class GeniusClient:
                 timeout=12.0,
             )
             if search_resp.status_code != 200:
-                self._cache.set(key, None)
                 return None
             hit = self._best_hit(track, search_resp.json().get("response", {}).get("hits", []) or [])
             if not hit:
-                self._cache.set(key, None)
                 return None
 
             result = hit.get("result", {}) or {}
-            song = await self._fetch_song(result.get("id"))
-            signal = self._build_signal(profile, track, result, song)
-            self._cache.set(key, signal)
-            return signal
+            metadata = {"result": result, "song": await self._fetch_song(result.get("id"))}
+            self._cache.set(key, metadata)
+            return metadata
         except Exception:
             return None
 
@@ -152,7 +168,7 @@ class GeniusClient:
         result: dict[str, Any],
         song: dict[str, Any],
     ) -> dict[str, Any]:
-        description = self._normalize_text(str(song.get("description_preview") or ""))
+        description = self._normalize_text(self._description_text(song))
         source_kind = "metadata_description" if description else "metadata_title_only"
         themes = self._themes(description) if description else []
         sentiment = self._sentiment(description) if description else "unknown"
@@ -182,6 +198,20 @@ class GeniusClient:
         if track.track_id:
             return f"spotify::{track.track_id}"
         return f"name::{track.title.lower()}::{track.artist.lower()}"
+
+    @staticmethod
+    def _description_text(song: dict[str, Any]) -> str:
+        return re.sub(r"\s+", " ", str(song.get("description_preview") or "")).strip()
+
+    @staticmethod
+    def _relative_scores(scores: list[float]) -> list[float]:
+        if not scores:
+            return []
+        low = min(scores)
+        high = max(scores)
+        if len(scores) == 1 or high - low <= 1e-9:
+            return [0.5] * len(scores)
+        return [round((score - low) / (high - low), 4) for score in scores]
 
     @staticmethod
     def _normalize_text(text: str) -> str:
@@ -235,17 +265,6 @@ class GeniusClient:
         return not re.search(negated, text)
 
     @classmethod
-    def _lyrical_intent_overlap(cls, intent: str, text: str) -> float:
-        terms = {
-            term
-            for term in re.findall(r"\w+", cls._normalize_text(intent))
-            if len(term) >= 4 and term not in LYRICAL_INTENT_STOPWORDS
-        }
-        if not terms:
-            return 0.0
-        return sum(1 for term in terms if cls._contains_term(text, term)) / len(terms)
-
-    @classmethod
     def _match_score(
         cls,
         profile: IntentProfile,
@@ -261,8 +280,6 @@ class GeniusClient:
             score += 0.12
         if profile.genre and any(g.lower() in text for g in profile.genre):
             score += 0.12
-        if profile.meaning_required and profile.lyrical_intent:
-            score += 0.4 * cls._lyrical_intent_overlap(profile.lyrical_intent, text)
         if profile.language == language:
             score += 0.08
         if profile.mood in {"sad", "melancholy", "galau"} and sentiment == "sad":

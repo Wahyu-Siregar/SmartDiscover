@@ -66,3 +66,33 @@ def test_pipeline_cache_keys_differ_for_different_prompts(monkeypatch) -> None:
 
     asyncio.run(_run())
     assert profile_calls == 2
+
+
+def test_search_cache_returns_isolated_candidates() -> None:
+    pipeline = RecommendationPipeline()
+    profile = IntentProfile(mood="calm", activity="studying", language="id")
+    search_calls = 0
+
+    async def fake_gather(_profile, _target_count):
+        nonlocal search_calls
+        search_calls += 1
+        return (
+            [TrackCandidate(title="A", artist="X", track_id="1")],
+            {"variants": ["q"], "broadening_applied": False},
+        )
+
+    pipeline.spotify.gather_candidates = fake_gather  # type: ignore[assignment]
+
+    async def _run_twice():
+        first, _strategy, first_hit = await pipeline._get_candidates(profile, 1)
+        first[0].lyric_signals = {"match_score": 1.0}
+        second, _strategy, second_hit = await pipeline._get_candidates(profile, 1)
+        return first, second, first_hit, second_hit
+
+    first, second, first_hit, second_hit = asyncio.run(_run_twice())
+
+    assert search_calls == 1
+    assert first_hit is False
+    assert second_hit is True
+    assert first[0] is not second[0]
+    assert second[0].lyric_signals is None
