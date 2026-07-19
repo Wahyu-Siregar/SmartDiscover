@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>SmartDiscover — Multi-Agent Music Curation</title>
+    <title>SmartDiscover - Rekomendasi Musik Personal</title>
     <link rel="icon" type="image/svg+xml" href="/static/assets/logo.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -15,13 +15,11 @@
   </head>
   <body>
     <div class="app-shell">
-      <!-- Ribbon -->
       <header class="ribbon">
-        <div class="ribbon__brand">
+        <a class="ribbon__brand" href="/" aria-label="SmartDiscover home">
           <img src="/static/assets/logo.svg" alt="" aria-hidden="true" />
           <span>SmartDiscover</span>
-        </div>
-        <span class="ribbon__issue" id="ribbonIssue">Vol. 02 · Multi-Agent Music Issue</span>
+        </a>
         <span class="ribbon__spacer"></span>
         <div class="ribbon__cluster">
           <div class="lang-switch" id="langSwitch" role="group" aria-label="Language">
@@ -29,229 +27,188 @@
             <button id="langEnBtn" class="lang-btn" type="button" aria-pressed="false">EN</button>
           </div>
           <button id="spotifyLoginBtn" class="btn btn--spotify" type="button">Connect Spotify</button>
-          <button id="healthBtn" class="btn btn--ghost" type="button">Check Health</button>
         </div>
       </header>
 
-      <!-- Hero -->
-      <section class="hero" aria-labelledby="heroTitle">
-        <div class="hero__masthead">
-          <div>
-            <p class="hero__kicker" id="heroKicker">Editorial Issue · Spotify Curation</p>
-            <h1 id="heroTitle" class="hero__title">
-              Music, <em>curated</em> by four agents.
-            </h1>
+      <main>
+        <section class="hero" aria-labelledby="heroTitle">
+          <div class="hero__masthead">
+            <p class="hero__kicker" id="heroKicker">Rekomendasi musik personal</p>
+            <h1 id="heroTitle" class="hero__title">Temukan musik yang cocok dengan suasanamu.</h1>
             <p class="hero__sub" id="subtitleText">
-              AI-Driven Spotify curation in a single prompt — profile, search, rank, present.
+              Ceritakan mood, aktivitas, atau cerita yang ingin kamu dengarkan.
             </p>
           </div>
-          <div class="cluster hero__health" aria-label="System health">
-            <span id="llmBadge" class="health-badge neutral">LLM: checking...</span>
-            <span id="spotifyBadge" class="health-badge neutral">Spotify: checking...</span>
-          </div>
-        </div>
 
-        <form id="recommendForm" class="hero__form">
-          <div class="field">
-            <label class="field__label" for="intentInput" id="intentLabel">Apa mood atau aktivitasmu?</label>
-            <textarea id="intentInput" class="textarea" rows="3" placeholder="contoh: lagu sedih pas nge-bug jam 2 pagi..." required></textarea>
-          </div>
-
-          <div class="field">
-            <span class="field__label" id="quickPromptLabel">Coba Prompt Bebas</span>
-            <div class="chip-row" id="quickPrompts">
-              <button id="chipFocus" class="chip" type="button" data-intent-id="lagu fokus buat kerja malam hari" data-intent-en="focus songs for late night work">Fokus Kerja</button>
-              <button id="chipRain" class="chip" type="button" data-intent-id="jalanan hujan malam sendirian" data-intent-en="rainy midnight drive alone">Hujan Malam</button>
-              <button id="chipWorkout" class="chip" type="button" data-intent-id="workout keras angkat beban" data-intent-en="high energy gym workout mix">Workout</button>
-            </div>
-          </div>
-
-          <div class="field-row">
+          <form id="recommendForm" class="hero__form">
             <div class="field">
-              <label class="field__label" for="targetCountInput" id="targetCountLabel">Berapa Lagu?</label>
-              <input id="targetCountInput" class="input input--small" type="number" inputmode="numeric" min="5" max="50" value="15" />
+              <label class="field__label" for="intentInput" id="intentLabel">
+                Kamu ingin mendengarkan musik seperti apa?
+              </label>
+              <textarea
+                id="intentInput"
+                class="textarea"
+                rows="3"
+                placeholder="contoh: lagu tenang untuk membaca malam ini"
+                required
+              ></textarea>
             </div>
+
             <div class="field">
-              <label class="field__label" for="agenticModeSelect" id="agenticModeLabel">Agent Mode</label>
-              <select id="agenticModeSelect" class="input input--small">
-                <option id="agenticModeAuto" value="auto">Auto</option>
-                <option id="agenticModeAgentic" value="agentic">Agentic</option>
-                <option id="agenticModeLinear" value="linear">Linear</option>
-              </select>
+              <span class="field__label" id="quickPromptLabel">Butuh ide? Coba salah satu ini</span>
+              <div class="chip-row" id="quickPrompts">
+                <button id="chipFocus" class="chip" type="button" data-intent-id="lagu fokus buat kerja malam hari" data-intent-en="focus songs for late night work">Fokus Kerja</button>
+                <button id="chipRain" class="chip" type="button" data-intent-id="jalanan hujan malam sendirian" data-intent-en="rainy midnight drive alone">Hujan Malam</button>
+                <button id="chipWorkout" class="chip" type="button" data-intent-id="workout keras angkat beban" data-intent-en="high energy gym workout mix">Workout</button>
+              </div>
             </div>
+
+            <details id="advancedSettings" class="advanced-settings">
+              <summary id="advancedSettingsLabel">Pengaturan lanjutan</summary>
+              <div class="advanced-settings__body">
+                <div class="field">
+                  <label class="field__label" for="targetCountInput" id="targetCountLabel">Jumlah lagu</label>
+                  <input id="targetCountInput" class="input input--small" type="number" inputmode="numeric" min="5" max="50" value="15" />
+                </div>
+                <div class="field">
+                  <label class="field__label" for="agenticModeSelect" id="agenticModeLabel">Cara pencarian</label>
+                  <select id="agenticModeSelect" class="input input--small">
+                    <option id="agenticModeAuto" value="auto">Otomatis</option>
+                    <option id="agenticModeAgentic" value="agentic">Lebih mendalam</option>
+                    <option id="agenticModeLinear" value="linear">Lebih cepat</option>
+                  </select>
+                </div>
+                <div class="advanced-settings__status" aria-label="System status">
+                  <span id="llmBadge" class="health-badge neutral">LLM: checking...</span>
+                  <span id="spotifyBadge" class="health-badge neutral">Spotify: checking...</span>
+                </div>
+              </div>
+            </details>
+
             <button id="submitBtn" class="btn btn--primary btn--block" type="submit">
-              <span id="submitText">Mulai Kurasi</span>
+              <span id="submitText">Cari rekomendasi</span>
             </button>
+            <p id="statusText" class="form-status" role="status" aria-live="polite">
+              Siap menerima permintaan.
+            </p>
+          </form>
+
+          <ol class="how-it-works" aria-label="Cara menggunakan SmartDiscover">
+            <li><span>1</span><strong id="howStep1">Ceritakan suasanamu</strong></li>
+            <li><span>2</span><strong id="howStep2">Kami mencari dan memilih lagu</strong></li>
+            <li><span>3</span><strong id="howStep3">Dengarkan, perbaiki, atau simpan</strong></li>
+          </ol>
+        </section>
+
+        <section id="resultsSection" class="results" aria-labelledby="resultsTitle" aria-busy="false" hidden>
+          <header class="section-head">
+            <span class="section-head__num" id="resultsKicker">Pilihan untukmu</span>
+            <h2 class="section-head__title" id="resultsTitle" tabindex="-1">Rekomendasi terbaik</h2>
+            <span class="section-head__pill" id="resultsPill">Smart match</span>
+          </header>
+
+          <div class="results__main">
+            <article class="intent-card" id="intentCard" hidden>
+              <span class="intent-card__eyebrow" id="intentCardEyebrow">Permintaanmu</span>
+              <p class="intent-card__headline" id="intentCardHeadline">-</p>
+              <div class="intent-card__meta">
+                <div><p class="intent-card__meta-label" id="statMoodLabel">Mood</p><p class="intent-card__meta-val" id="summaryMood">-</p></div>
+                <div><p class="intent-card__meta-label" id="statActivityLabel">Aktivitas</p><p class="intent-card__meta-val" id="summaryActivity">-</p></div>
+                <div><p class="intent-card__meta-label" id="statCountLabel">Lagu</p><p class="intent-card__meta-val" id="summaryCount">-</p></div>
+                <div><p class="intent-card__meta-label" id="statModeLabel">Pencocokan</p><p class="intent-card__meta-val" id="summaryMode">-</p></div>
+              </div>
+              <div class="intent-card__confidence">
+                <p class="intent-card__meta-label">Confidence</p>
+                <div class="confidence-bar"><div class="confidence-bar__fill" id="confidenceFill" style="width:0%"></div></div>
+              </div>
+            </article>
+
+            <p id="resultLead" class="results__lead"></p>
+
+            <article class="pipeline" id="agentFlow" data-stage="0" role="status" aria-live="polite">
+              <div class="pipeline__header">
+                <h3 id="pipelineTitle" class="pipeline__title">Proses rekomendasi</h3>
+                <span id="agentStageText" class="pipeline__stage-text">Siap</span>
+              </div>
+              <div class="track-container">
+                <div class="track-line"></div>
+                <div class="track-active"></div>
+                <div id="agentPixel" class="agent-orb" data-stage="0" aria-hidden="true">
+                  <svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+                    <circle class="orb-aura" cx="30" cy="30" r="26" />
+                    <circle class="orb-ring" cx="30" cy="30" r="22" />
+                    <g class="orb-scan"><line x1="6" y1="30" x2="54" y2="30" /></g>
+                    <g class="orb-orbit">
+                      <circle class="orb-sat" cx="30" cy="10" r="2" />
+                      <circle class="orb-sat" cx="47.32" cy="40" r="2" />
+                      <circle class="orb-sat" cx="12.68" cy="40" r="2" />
+                    </g>
+                    <g class="orb-bars">
+                      <rect x="18" y="22" width="3" height="16" rx="1.5" />
+                      <rect x="24" y="22" width="3" height="16" rx="1.5" />
+                      <rect x="30" y="22" width="3" height="16" rx="1.5" />
+                      <rect x="36" y="22" width="3" height="16" rx="1.5" />
+                      <rect x="42" y="22" width="3" height="16" rx="1.5" />
+                    </g>
+                    <g class="orb-burst">
+                      <line x1="30" y1="6" x2="30" y2="14" />
+                      <line x1="30" y1="46" x2="30" y2="54" />
+                      <line x1="6" y1="30" x2="14" y2="30" />
+                      <line x1="46" y1="30" x2="54" y2="30" />
+                      <line x1="13" y1="13" x2="19" y2="19" />
+                      <line x1="41" y1="41" x2="47" y2="47" />
+                      <line x1="13" y1="47" x2="19" y2="41" />
+                      <line x1="41" y1="19" x2="47" y2="13" />
+                    </g>
+                    <circle class="orb-core" cx="30" cy="30" r="6" />
+                    <path class="orb-check" d="M22 31 L28 37 L40 23" fill="none" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                </div>
+                <div class="track-steps">
+                  <div class="track-step" id="pillProfiler"><div class="dot"></div><span class="step-label">Memahami suasana</span></div>
+                  <div class="track-step" id="pillSearch"><div class="dot"></div><span class="step-label">Mencari lagu</span></div>
+                  <div class="track-step" id="pillRanker"><div class="dot"></div><span class="step-label">Menyusun pilihan</span></div>
+                  <div class="track-step" id="pillPresenter"><div class="dot"></div><span class="step-label">Menyiapkan hasil</span></div>
+                </div>
+              </div>
+              <div class="pipeline__footer">
+                <p id="agentMetrics">Progres pencarian akan tampil di sini.</p>
+              </div>
+            </article>
+
+            <div id="qualityWarnings" class="quality-banner" role="alert" hidden></div>
+            <div class="result-actions">
+              <div id="refineSlot"></div>
+              <div id="exportSlot"></div>
+            </div>
+            <div id="recommendationList" class="track-list"></div>
+            <details class="agentic-panel" id="agenticPanel" hidden>
+              <summary id="agenticPanelSummary">Lihat proses AI</summary>
+              <div class="agentic-panel__body" id="agenticPanelBody"></div>
+            </details>
           </div>
-
-          <p id="statusText" class="text-eyebrow" role="status" aria-live="polite">Siap menerima perintah.</p>
-        </form>
-
-        <aside class="hero__dossier" aria-label="Issue dossier">
-          <div class="dossier">
-            <div class="dossier__masthead">
-              <span class="dossier__title" id="dossierTitle">The Issue Brief</span>
-              <span class="dossier__issue" id="dossierIssue">№ 02</span>
-            </div>
-            <div class="dossier__row">
-              <span class="dossier__label" id="insightEngineLabel">Engine</span>
-              <span class="dossier__value" id="insightEngineValue">Multi-Agent Music Graph</span>
-            </div>
-            <div class="dossier__row">
-              <span class="dossier__label" id="insightLatencyLabel">Latency</span>
-              <span class="dossier__value dossier__value--mono" id="insightLatencyValue">Adaptive</span>
-            </div>
-            <div class="dossier__row">
-              <span class="dossier__label" id="insightOutputLabel">Output</span>
-              <span class="dossier__value" id="insightOutputValue">Ready-to-Play Picks</span>
-            </div>
-            <div class="dossier__row">
-              <span class="dossier__label">Mode</span>
-              <span class="dossier__value dossier__value--mono" id="dossierMode">Idle</span>
-            </div>
-          </div>
-
-          <!-- Pipeline visualization -->
-          <article class="pipeline" id="agentFlow" data-stage="0" role="status" aria-live="polite">
-            <div class="pipeline__header">
-              <h3 id="pipelineTitle" class="pipeline__title">Agent Neural Pipeline</h3>
-              <span id="agentStageText" class="pipeline__stage-text">Idle</span>
-            </div>
-            <div class="track-container">
-              <div class="track-line"></div>
-              <div class="track-active"></div>
-              <div id="agentPixel" class="agent-orb" data-stage="0" aria-hidden="true">
-                <svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
-                  <!-- Aura backdrop -->
-                  <circle class="orb-aura" cx="30" cy="30" r="26" />
-                  <!-- Outer ring (dashed, rotates) -->
-                  <circle class="orb-ring" cx="30" cy="30" r="22" />
-                  <!-- Profiler scan line -->
-                  <g class="orb-scan">
-                    <line x1="6" y1="30" x2="54" y2="30" />
-                  </g>
-                  <!-- Search orbital satellites -->
-                  <g class="orb-orbit">
-                    <circle class="orb-sat" cx="30" cy="10" r="2" />
-                    <circle class="orb-sat" cx="47.32" cy="40" r="2" />
-                    <circle class="orb-sat" cx="12.68" cy="40" r="2" />
-                  </g>
-                  <!-- Ranker equalizer bars -->
-                  <g class="orb-bars">
-                    <rect x="18" y="22" width="3" height="16" rx="1.5" />
-                    <rect x="24" y="22" width="3" height="16" rx="1.5" />
-                    <rect x="30" y="22" width="3" height="16" rx="1.5" />
-                    <rect x="36" y="22" width="3" height="16" rx="1.5" />
-                    <rect x="42" y="22" width="3" height="16" rx="1.5" />
-                  </g>
-                  <!-- Presenter starburst -->
-                  <g class="orb-burst">
-                    <line x1="30" y1="6" x2="30" y2="14" />
-                    <line x1="30" y1="46" x2="30" y2="54" />
-                    <line x1="6" y1="30" x2="14" y2="30" />
-                    <line x1="46" y1="30" x2="54" y2="30" />
-                    <line x1="13" y1="13" x2="19" y2="19" />
-                    <line x1="41" y1="41" x2="47" y2="47" />
-                    <line x1="13" y1="47" x2="19" y2="41" />
-                    <line x1="41" y1="19" x2="47" y2="13" />
-                  </g>
-                  <!-- Inner core -->
-                  <circle class="orb-core" cx="30" cy="30" r="6" />
-                  <!-- Done checkmark -->
-                  <path class="orb-check" d="M22 31 L28 37 L40 23" fill="none" stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
-              </div>
-              <div class="track-steps">
-                <div class="track-step" id="pillProfiler"><div class="dot"></div><span class="step-label">Profiler</span></div>
-                <div class="track-step" id="pillSearch"><div class="dot"></div><span class="step-label">Search</span></div>
-                <div class="track-step" id="pillRanker"><div class="dot"></div><span class="step-label">Ranker</span></div>
-                <div class="track-step" id="pillPresenter"><div class="dot"></div><span class="step-label">Presenter</span></div>
-              </div>
-            </div>
-            <div class="pipeline__footer">
-              <p id="agentMetrics">Milestone backend akan tampil setelah request selesai.</p>
-            </div>
-          </article>
-        </aside>
-      </section>
-
-      <!-- Results -->
-      <section class="results" aria-labelledby="resultsTitle">
-        <header class="section-head" style="grid-column: 1 / -1;">
-          <span class="section-head__num" id="resultsKicker">№ 03 · Curation Feed</span>
-          <h2 class="section-head__title" id="resultsTitle">Rekomendasi Terbaik</h2>
-          <span class="section-head__pill" id="resultsPill">Smart Match Feed</span>
-        </header>
-
-        <aside class="results__sidebar" aria-label="Sidebar">
-          <article class="intent-card" id="intentCard" hidden>
-            <span class="intent-card__eyebrow" id="intentCardEyebrow">Detected Intent</span>
-            <p class="intent-card__headline" id="intentCardHeadline">—</p>
-            <div class="intent-card__meta">
-              <div>
-                <p class="intent-card__meta-label" id="statMoodLabel">Mood</p>
-                <p class="intent-card__meta-val" id="summaryMood">—</p>
-              </div>
-              <div>
-                <p class="intent-card__meta-label" id="statActivityLabel">Activity</p>
-                <p class="intent-card__meta-val" id="summaryActivity">—</p>
-              </div>
-              <div>
-                <p class="intent-card__meta-label" id="statCountLabel">Tracks</p>
-                <p class="intent-card__meta-val" id="summaryCount">—</p>
-              </div>
-              <div>
-                <p class="intent-card__meta-label" id="statModeLabel">Engine</p>
-                <p class="intent-card__meta-val" id="summaryMode">—</p>
-              </div>
-            </div>
-            <div class="intent-card__confidence">
-              <p class="intent-card__meta-label">Confidence</p>
-              <div class="confidence-bar"><div class="confidence-bar__fill" id="confidenceFill" style="width:0%"></div></div>
-            </div>
-          </article>
-
-          <details class="agentic-panel" id="agenticPanel" hidden>
-            <summary id="agenticPanelSummary">Behind the scenes</summary>
-            <div class="agentic-panel__body" id="agenticPanelBody"></div>
-          </details>
-        </aside>
-
-        <main class="results__main">
-          <p id="resultLead" class="results__lead">Masukan prompt di panel kiri untuk memulai iterasi.</p>
-          <div id="qualityWarnings" class="quality-banner" role="alert" hidden></div>
-          <div id="exportSlot"></div>
-          <div id="refineSlot"></div>
-          <div id="recommendationList" class="track-list"></div>
-        </main>
-      </section>
+        </section>
+      </main>
     </div>
 
-    <!-- Track detail modal -->
     <div id="trackDetailModal" class="modal" aria-hidden="true">
       <button id="trackDetailOverlay" class="modal__overlay" type="button" aria-label="Close"></button>
       <section class="modal__sheet" role="dialog" aria-modal="true" aria-labelledby="trackDetailTitle">
         <header class="modal__head">
           <span class="modal__title" id="trackDetailTitle">Track Detail</span>
-          <button id="trackDetailCloseBtn" class="modal__close" type="button" aria-label="Close">✕</button>
+          <button id="trackDetailCloseBtn" class="modal__close" type="button" aria-label="Close">&times;</button>
         </header>
-        <p id="trackDetailSong" class="modal__song">—</p>
-        <p id="trackDetailArtist" class="modal__artist">—</p>
+        <p id="trackDetailSong" class="modal__song">-</p>
+        <p id="trackDetailArtist" class="modal__artist">-</p>
         <div class="modal__meta">
-          <div class="modal__meta-item">
-            <span class="modal__meta-label" id="trackDetailScoreLabel">Score</span>
-            <span class="modal__meta-value" id="trackDetailScoreValue">—</span>
-          </div>
-          <div class="modal__meta-item">
-            <span class="modal__meta-label" id="trackDetailPreviewLabel">Preview</span>
-            <span class="modal__meta-value" id="trackDetailPreviewValue">—</span>
-          </div>
+          <div class="modal__meta-item"><span class="modal__meta-label" id="trackDetailScoreLabel">Score</span><span class="modal__meta-value" id="trackDetailScoreValue">-</span></div>
+          <div class="modal__meta-item"><span class="modal__meta-label" id="trackDetailPreviewLabel">Preview</span><span class="modal__meta-value" id="trackDetailPreviewValue">-</span></div>
         </div>
         <div class="modal__reason">
           <p class="modal__meta-label" id="trackDetailReasonLabel">Reason</p>
-          <p id="trackDetailReasonText" class="modal__reason-text">—</p>
+          <p id="trackDetailReasonText" class="modal__reason-text">-</p>
         </div>
-        <a id="trackDetailSpotifyLink" class="modal__link" href="#" target="_blank" rel="noopener noreferrer">Open in Spotify ↗</a>
+        <a id="trackDetailSpotifyLink" class="modal__link" href="#" target="_blank" rel="noopener noreferrer">Open in Spotify</a>
       </section>
     </div>
 
