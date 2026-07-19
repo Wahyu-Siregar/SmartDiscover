@@ -105,3 +105,19 @@ def test_result_lifecycle_uses_existing_hidden_helper() -> None:
     assert 'qualityNotes?.llm_enabled === false' in warnings
     assert "demoCatalogNotice:" in I18N.read_text(encoding="utf-8")
     assert "basicMatchingNotice:" in I18N.read_text(encoding="utf-8")
+
+
+def test_prompt_first_styles_keep_mobile_and_touch_contracts() -> None:
+    layout = (ROOT / "web" / "css" / "layout.css").read_text(encoding="utf-8")
+    forms = (
+        ROOT / "web" / "css" / "components" / "forms.css"
+    ).read_text(encoding="utf-8")
+    buttons = (
+        ROOT / "web" / "css" / "components" / "buttons.css"
+    ).read_text(encoding="utf-8")
+    assert ".hero__form" in layout and "max-width: 760px" in layout
+    assert ".results__main" in layout and "max-width: 920px" in layout
+    assert "@media (max-width: 640px)" in layout
+    assert ".how-it-works" in layout
+    assert ".advanced-settings" in forms
+    assert "min-height: 44px" in buttons

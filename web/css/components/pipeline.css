@@ -1,10 +1,13 @@
 @layer components {
+  .pipeline:not(.is-working) { display: none; }
+  .pipeline.is-working { display: flex; }
+
   .pipeline {
     background: var(--canvas-soft);
     border: 1px solid var(--rule);
     border-radius: var(--radius-3);
-    padding: var(--space-5);
-    display: flex; flex-direction: column; gap: var(--space-4);
+    padding: var(--space-4);
+    display: flex; flex-direction: column; gap: var(--space-3);
     overflow: hidden;
     position: relative;
   }
@@ -18,7 +21,7 @@
   }
   .pipeline__title {
     font-family: var(--font-display);
-    font-size: var(--fs-headline);
+    font-size: var(--fs-title);
     letter-spacing: -0.01em;
     font-weight: 500;
   }
@@ -32,7 +35,7 @@
 
   .track-container {
     position: relative;
-    height: 80px;
+    height: 72px;
     margin-block: var(--space-3);
     padding-inline: var(--space-3);
   }

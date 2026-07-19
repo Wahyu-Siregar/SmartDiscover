@@ -16,105 +16,68 @@
     border: 0;
   }
 
-  /* Dossier — issue meta panel in hero */
-  .dossier {
+  /* Compact request summary */
+  .intent-card {
+    padding: var(--space-4);
+    display: grid;
+    grid-template-columns: minmax(180px, 1.4fr) minmax(0, 3fr);
+    gap: var(--space-2) var(--space-5);
+    color: var(--ink);
     background: var(--canvas-soft);
     border: 1px solid var(--rule);
     border-radius: var(--radius-3);
-    padding: var(--space-5);
-    display: flex; flex-direction: column; gap: var(--space-3);
-  }
-  .dossier__masthead {
-    display: flex; align-items: baseline; justify-content: space-between;
-    border-bottom: 1px solid var(--rule);
-    padding-bottom: var(--space-3);
-  }
-  .dossier__title {
-    font-family: var(--font-display);
-    font-size: var(--fs-title);
-    letter-spacing: -0.01em;
-  }
-  .dossier__issue {
-    font-family: var(--font-mono);
-    font-size: var(--fs-eyebrow);
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.22em;
-  }
-  .dossier__row {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    gap: var(--space-3);
-    align-items: baseline;
-    padding-block: 4px;
-  }
-  .dossier__label {
-    font-family: var(--font-mono);
-    font-size: var(--fs-eyebrow);
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.18em;
-  }
-  .dossier__value {
-    font-family: var(--font-display);
-    font-size: var(--fs-title);
-    color: var(--ink);
-  }
-  .dossier__value--mono { font-family: var(--font-mono); font-size: var(--fs-small); }
-
-  /* Intent profile sidebar card */
-  .intent-card {
-    background: var(--surface);
-    color: var(--surface-ink);
-    padding: var(--space-5);
-    border-radius: var(--radius-3);
-    box-shadow: var(--shadow-md);
-    display: flex; flex-direction: column; gap: var(--space-3);
   }
   .intent-card__eyebrow {
+    grid-column: 1;
+    color: var(--accent-soft);
     font-family: var(--font-mono);
     font-size: var(--fs-eyebrow);
+    letter-spacing: 0.18em;
     text-transform: uppercase;
-    letter-spacing: 0.22em;
-    color: var(--accent);
   }
   .intent-card__headline {
-    font-family: var(--font-display);
-    font-size: var(--fs-display-2);
-    line-height: var(--lh-tight);
-    letter-spacing: -0.02em;
-    text-wrap: balance;
-  }
-  .intent-card__headline em { font-style: italic; color: var(--accent); }
-  .intent-card__meta {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: var(--space-3);
-    border-top: 1px solid rgba(22, 22, 22, 0.12);
-    padding-top: var(--space-3);
-    margin-top: var(--space-2);
-  }
-  .intent-card__meta-label {
-    font-family: var(--font-mono);
-    font-size: var(--fs-eyebrow);
-    text-transform: uppercase;
-    letter-spacing: 0.16em;
-    color: var(--surface-ink-muted);
-  }
-  .intent-card__meta-val {
+    grid-column: 1;
+    color: var(--ink);
     font-family: var(--font-display);
     font-size: var(--fs-title);
+    line-height: var(--lh-tight);
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+  }
+  .intent-card__headline em {
+    color: var(--accent-soft);
+    font-style: italic;
+  }
+  .intent-card__meta {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--space-3);
+    align-items: center;
+  }
+  .intent-card__meta-label {
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: var(--fs-eyebrow);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .intent-card__meta-val {
     margin-top: 2px;
-    color: var(--surface-ink);
+    color: var(--ink);
+    font-family: var(--font-display);
+    font-size: var(--fs-body);
   }
   .intent-card__confidence {
+    grid-column: 1 / -1;
     margin-top: var(--space-2);
   }
   .confidence-bar {
     height: 4px;
-    background: rgba(22, 22, 22, 0.1);
-    border-radius: var(--radius-pill);
     overflow: hidden;
+    background: var(--rule);
+    border-radius: var(--radius-pill);
   }
   .confidence-bar__fill {
     height: 100%;
@@ -404,10 +367,21 @@
   }
 
   @media (max-width: 640px) {
-    .panel, .dossier, .intent-card { padding: var(--space-4); }
-    .dossier__row { gap: var(--space-2); }
-    .intent-card__meta { gap: var(--space-2); }
-    .intent-card__headline { font-size: clamp(1.5rem, 4vw + 0.5rem, 2rem); }
+    .panel { padding: var(--space-4); }
+    .intent-card { grid-template-columns: 1fr; }
+    .intent-card__eyebrow,
+    .intent-card__headline,
+    .intent-card__meta,
+    .intent-card__confidence {
+      grid-column: 1;
+      grid-row: auto;
+    }
+    .intent-card__meta {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: var(--space-3);
+      padding-top: var(--space-2);
+      border-top: 1px solid var(--rule);
+    }
     .agentic-panel summary { padding: var(--space-2) var(--space-3); }
     .agentic-panel__body { padding: var(--space-3); padding-top: var(--space-3); }
     .stage-bars { grid-template-columns: 60px 1fr auto; gap: 4px var(--space-2); }

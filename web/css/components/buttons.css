@@ -3,6 +3,7 @@
     --btn-bg: var(--accent);
     --btn-fg: var(--accent-ink);
     --btn-bd: transparent;
+    min-height: 44px;
     display: inline-flex; align-items: center; justify-content: center;
     gap: 0.5rem;
     padding: 0.7rem 1.2rem;
@@ -48,7 +49,8 @@
   .btn--block { width: 100%; }
 
   .icon-btn {
-    width: 36px; height: 36px;
+    width: 44px; height: 44px;
+    min-height: 44px;
     display: inline-grid; place-items: center;
     border-radius: var(--radius-pill);
     color: var(--muted);
@@ -65,6 +67,7 @@
     background: rgba(246, 241, 232, 0.04);
   }
   .lang-btn {
+    min-height: 44px;
     padding: 4px 12px;
     border-radius: var(--radius-pill);
     font-family: var(--font-mono);
@@ -105,7 +108,7 @@
   @media (max-width: 640px) {
     .btn { padding: 0.65rem 1rem; font-size: 0.78rem; }
     .btn--primary { letter-spacing: 0.12em; }
-    .icon-btn { width: 40px; height: 40px; }  /* WCAG min 44px target — 40 with padding ~OK */
+    .icon-btn { width: 44px; height: 44px; }
     .health-badge { padding: 3px 8px; }
   }
 }
