@@ -9,6 +9,7 @@ export function applyIntentLabels() {
     statActivityLabel: tr("statActivity"),
     statCountLabel: tr("statCount"),
     statModeLabel: tr("statMode"),
+    confidenceLabel: tr("confidenceLabel"),
   };
   for (const [id, text] of Object.entries(map)) {
     const node = $(id);
@@ -44,7 +45,7 @@ export function renderIntentSidebar(data, sourceText) {
   setText("summaryCount", String(summary.returned_count ?? "—"));
 
   const llmEnabled = !!notes.llm_enabled;
-  setText("summaryMode", llmEnabled ? "LLM Hybrid" : "Heuristic");
+  setText("summaryMode", llmEnabled ? tr("matchingEnhanced") : tr("matchingBasic"));
 
   const fill = $("confidenceFill");
   if (fill) fill.style.width = formatPercent(profile.confidence ?? 0.5);

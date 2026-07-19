@@ -129,3 +129,41 @@ def test_track_cards_use_native_match_details() -> None:
     assert 'el("summary", { text: tr("trackDetails") })' in cards
     assert 'class: "track-card__score"' not in cards
     assert I18N.read_text(encoding="utf-8").count("noAudioDetails:") == 2
+
+
+def test_default_locale_keeps_primary_result_copy_plain() -> None:
+    i18n = I18N.read_text(encoding="utf-8")
+    _, probe = parse_index()
+    sidebar = (
+        ROOT / "web" / "js" / "ui" / "intentSidebar.js"
+    ).read_text(encoding="utf-8")
+    for source in (
+        'foundStatus: "{count} lagu ditemukan. Hasil siap untuk didengarkan."',
+        'intentDetected: "Permintaanmu"',
+        'statMood: "Suasana"',
+        'statCount: "Lagu"',
+        'confidenceLabel: "Tingkat kecocokan"',
+        'statMode: "Pencocokan"',
+        'behindScenes: "Lihat proses AI"',
+        'refineLabel: "Perbaiki rekomendasi"',
+        'refineButton: "Perbaiki"',
+        'refineHint: "Ceritakan perubahan yang kamu inginkan."',
+        'refinePlaceholder: "misalnya: lebih ceria, lebih lambat, atau kurangi instrumental"',
+        'refineMore: "lebih ceria"',
+        'previewPlay: "Putar cuplikan"',
+        'previewPause: "Jeda"',
+        'previewNoPreview: "Preview tidak tersedia"',
+        'detailTitle: "Detail lagu"',
+        'matchLabel: "cocok"',
+        'openSpotify: "Buka di Spotify"',
+        'exportSave: "Simpan sebagai playlist Spotify"',
+        'exportLogin: "Hubungkan Spotify untuk membuat playlist"',
+        'metricsWorking: "Sedang menyiapkan pilihanmu..."',
+    ):
+        assert source in i18n
+    assert probe.ids["confidenceLabel"] == 1
+    assert 'confidenceLabel: tr("confidenceLabel")' in sidebar
+    assert (
+        'setText("summaryMode", llmEnabled ? tr("matchingEnhanced") : tr("matchingBasic"));'
+        in sidebar
+    )
