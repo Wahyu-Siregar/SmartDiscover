@@ -27,30 +27,35 @@ function buildCard(item, rank) {
   card.appendChild(el("span", { class: "track-card__num", text: pad2(rank) }));
 
   card.appendChild(el("div", { class: "track-card__head" }, [
-    el("h3", { class: "track-card__title", text: item.title || "—" }),
-    el("p", { class: "track-card__artist", text: item.artist || "—" }),
-  ]));
-
-  card.appendChild(el("div", { class: "track-card__score" }, [
-    el("span", { class: "track-card__score-num", text: formatPercent(item.score, 0) }),
-    el("span", { class: "track-card__score-label", text: tr("matchLabel") }),
+    el("h3", { class: "track-card__title", text: item.title || "-" }),
+    el("p", { class: "track-card__artist", text: item.artist || "-" }),
   ]));
 
   card.appendChild(el("p", {
     class: "track-card__why",
     text: item.why?.trim() || tr("whyFallback"),
-    onClick: () => openModal(item),
   }));
 
-  // Footer: audio chips left, actions right.
-  const footer = el("div", { class: "track-card__footer" });
   const chips = renderAudioChips(item.audio_features);
   const lyricChip = renderLyricChip(item.lyric_signals);
   const chipWrap = el("div", { class: "audio-chips" });
   if (chips) Array.from(chips.children).forEach((child) => chipWrap.appendChild(child));
   if (lyricChip) chipWrap.appendChild(lyricChip);
-  footer.appendChild(chipWrap.children.length ? chipWrap : el("span"));
 
+  const detailsBody = el("div", { class: "track-card__details-body" }, [
+    el("p", {
+      class: "track-card__match",
+      text: `${formatPercent(item.score, 0)} ${tr("matchLabel")}`,
+    }),
+    chipWrap.children.length ? chipWrap : el("p", { text: tr("noAudioDetails") }),
+  ]);
+
+  card.appendChild(el("details", { class: "track-card__details" }, [
+    el("summary", { text: tr("trackDetails") }),
+    detailsBody,
+  ]));
+
+  const footer = el("div", { class: "track-card__footer" });
   const actions = el("div", { class: "track-card__actions" }, [
     renderPreview(item, card),
   ]);
@@ -67,11 +72,9 @@ function buildCard(item, rank) {
 
   actions.appendChild(el("button", {
     type: "button",
-    class: "icon-btn",
-    "aria-label": tr("detailButton"),
-    title: tr("detailButton"),
+    class: "btn btn--ghost",
     onClick: () => openModal(item),
-    text: "›",
+    text: tr("detailButton"),
   }));
 
   footer.appendChild(actions);

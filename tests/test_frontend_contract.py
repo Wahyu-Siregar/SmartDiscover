@@ -121,3 +121,11 @@ def test_prompt_first_styles_keep_mobile_and_touch_contracts() -> None:
     assert ".how-it-works" in layout
     assert ".advanced-settings" in forms
     assert "min-height: 44px" in buttons
+
+
+def test_track_cards_use_native_match_details() -> None:
+    cards = (ROOT / "web" / "js" / "ui" / "cards.js").read_text(encoding="utf-8")
+    assert 'el("details", { class: "track-card__details" }' in cards
+    assert 'el("summary", { text: tr("trackDetails") })' in cards
+    assert 'class: "track-card__score"' not in cards
+    assert I18N.read_text(encoding="utf-8").count("noAudioDetails:") == 2

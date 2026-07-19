@@ -85,144 +85,142 @@
     transition: width var(--dur-3) var(--ease-out);
   }
 
-  /* Track card — editorial */
+  /* Track card */
   .track-card {
     --bg: var(--surface);
     --fg: var(--surface-ink);
-    background: var(--bg);
-    color: var(--fg);
-    border-radius: var(--radius-3);
     padding: var(--space-5) var(--space-6);
     display: grid;
-    grid-template-columns: minmax(70px, 80px) 1fr auto;
-    gap: var(--space-4) var(--space-5);
+    grid-template-columns: minmax(56px, 72px) 1fr;
+    gap: var(--space-3) var(--space-5);
     align-items: start;
-    box-shadow: var(--shadow-md);
-    transition: transform var(--dur-2) var(--ease-out), box-shadow var(--dur-2);
     position: relative;
     overflow: hidden;
+    color: var(--fg);
+    background: var(--bg);
+    border-radius: var(--radius-3);
+    box-shadow: var(--shadow-md);
+    transition: transform var(--dur-2) var(--ease-out), box-shadow var(--dur-2);
   }
+  .track-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+  }
+  .track-card__num {
+    grid-column: 1;
+    grid-row: 1 / span 4;
+    color: var(--accent);
+    font-family: var(--font-display);
+    font-size: clamp(2.4rem, 3vw + 1rem, 3.6rem);
+    font-feature-settings: "tnum";
+    font-variation-settings: "WONK" 1;
+    font-weight: 400;
+    line-height: 1;
+  }
+  .track-card__head {
+    grid-column: 2;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .track-card__title {
+    color: var(--surface-ink);
+    font-family: var(--font-display);
+    font-size: clamp(1.2rem, 0.6vw + 1rem, 1.6rem);
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    line-height: 1.15;
+  }
+  .track-card__artist {
+    color: var(--surface-ink-muted);
+    font-size: 0.85rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .track-card__why {
+    grid-column: 2;
+    max-width: 64ch;
+    padding-left: var(--space-3);
+    color: var(--surface-ink);
+    border-left: 2px solid var(--accent);
+    font-family: var(--font-display);
+    font-size: var(--fs-title);
+    font-style: italic;
+    text-wrap: pretty;
+  }
+  .track-card__details,
+  .track-card__footer {
+    grid-column: 2;
+  }
+  .track-card__details {
+    padding-top: var(--space-2);
+    border-top: 1px solid rgba(22, 22, 22, 0.1);
+  }
+  .track-card__details > summary {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    color: var(--surface-ink-muted);
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .track-card__details-body {
+    padding-top: var(--space-2);
+    display: grid;
+    gap: var(--space-3);
+    color: var(--surface-ink-muted);
+  }
+  .track-card__match {
+    color: var(--surface-ink);
+    font-family: var(--font-mono);
+    font-size: var(--fs-small);
+  }
+  .track-card__footer {
+    padding-top: var(--space-2);
+    display: flex;
+    justify-content: flex-end;
+  }
+  .track-card__actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
   @media (max-width: 640px) {
     .track-card {
       padding: var(--space-4);
       grid-template-columns: auto 1fr;
-      gap: var(--space-2) var(--space-3);
+      gap: var(--space-3);
     }
-  }
-  .track-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
-
-  .track-card__num {
-    grid-row: 1 / span 3;
-    font-family: var(--font-display);
-    font-weight: 400;
-    font-size: clamp(2.4rem, 3vw + 1rem, 3.6rem);
-    line-height: 1;
-    color: var(--accent);
-    font-feature-settings: "tnum";
-    font-variation-settings: "WONK" 1;
-  }
-
-  .track-card__head {
-    grid-column: 2;
-    display: flex; flex-direction: column; gap: 4px;
-  }
-  .track-card__title {
-    font-family: var(--font-display);
-    font-weight: 500;
-    font-size: clamp(1.2rem, 0.6vw + 1rem, 1.6rem);
-    line-height: 1.15;
-    letter-spacing: -0.01em;
-    color: var(--surface-ink);
-  }
-  .track-card__artist {
-    font-size: var(--fs-body);
-    color: var(--surface-ink-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    font-size: 0.85rem;
-  }
-
-  .track-card__score {
-    grid-column: 3;
-    grid-row: 1;
-    display: flex; flex-direction: column; align-items: flex-end;
-    font-family: var(--font-mono);
-  }
-  .track-card__score-num {
-    font-size: 1.4rem;
-    font-weight: 700;
-    color: var(--surface-ink);
-  }
-  .track-card__score-label {
-    font-size: var(--fs-eyebrow);
-    color: var(--surface-ink-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.18em;
-  }
-
-  .track-card__why {
-    grid-column: 2 / span 2;
-    grid-row: 2;
-    font-family: var(--font-display);
-    font-style: italic;
-    font-size: var(--fs-title);
-    color: var(--surface-ink);
-    border-left: 2px solid var(--accent);
-    padding-left: var(--space-3);
-    max-width: 64ch;
-    text-wrap: pretty;
-  }
-
-  .track-card__footer {
-    grid-column: 2 / span 2;
-    grid-row: 3;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: var(--space-3);
-    padding-top: var(--space-3);
-    border-top: 1px solid rgba(22, 22, 22, 0.1);
-  }
-  .track-card__actions {
-    display: flex; gap: var(--space-2); align-items: center; flex-wrap: wrap;
-  }
-
-  @media (max-width: 640px) {
     .track-card__num {
-      grid-row: 1;
       grid-column: 1;
+      grid-row: 1;
       font-size: 2rem;
     }
     .track-card__head {
       grid-column: 2;
       grid-row: 1;
     }
-    .track-card__title { font-size: 1.05rem; line-height: 1.2; }
+    .track-card__title {
+      font-size: 1.05rem;
+      line-height: 1.2;
+    }
     .track-card__artist { font-size: 0.78rem; }
-    .track-card__score {
-      grid-column: 1 / span 2;
-      grid-row: 2;
-      flex-direction: row;
-      align-items: baseline;
-      gap: var(--space-2);
+    .track-card__why,
+    .track-card__details,
+    .track-card__footer {
+      grid-column: 1 / -1;
+    }
+    .track-card__why {
+      padding-left: var(--space-2);
+      font-size: 0.95rem;
+    }
+    .track-card__footer { justify-content: flex-start; }
+    .track-card__actions {
+      width: 100%;
       justify-content: flex-start;
     }
-    .track-card__score-num { font-size: 1.05rem; }
-    .track-card__score-label { font-size: 0.65rem; }
-    .track-card__why {
-      grid-column: 1 / span 2;
-      grid-row: 3;
-      font-size: 0.95rem;
-      padding-left: var(--space-2);
-    }
-    .track-card__footer {
-      grid-column: 1 / span 2;
-      grid-row: 4;
-      gap: var(--space-2);
-    }
-    .track-card__footer > * { width: 100%; }
-    .track-card__actions { width: 100%; justify-content: flex-start; }
   }
 
   /* Skeleton card */
