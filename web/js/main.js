@@ -1,4 +1,4 @@
-import { $ } from "./utils/dom.js";
+import { $, clearChildren, setHidden } from "./utils/dom.js";
 import { initLang, setLanguage, currentLang, tr, onLangChange } from "./i18n.js";
 import * as api from "./api.js";
 import { bindModal, applyLabels as applyModalLabels } from "./ui/modal.js";
@@ -11,11 +11,10 @@ import {
   startAgentTimeline,
 } from "./ui/pipeline.js";
 import { renderSkeleton } from "./ui/skeleton.js";
-import { applyDossierLabels, setDossierLatency, setDossierMode } from "./ui/dossier.js";
 import { applyIntentLabels } from "./ui/intentSidebar.js";
 import { renderResultPayload, rerenderLast, setStatus, setResultLead } from "./render.js";
 import { bindSpotifyButton, syncOAuthStatus, setSpotifyConnected } from "./oauth.js";
-import { getState } from "./state.js";
+import { getState, setState } from "./state.js";
 
 // ---- Static label hookup (i18n) -----------------------------------
 
@@ -77,7 +76,6 @@ function applyStaticLabels() {
     langEn.setAttribute("aria-pressed", String(!isId));
   }
 
-  applyDossierLabels();
   applyIntentLabels();
   applyModalLabels();
 
@@ -116,6 +114,17 @@ function bindQuickPrompts() {
 
 // ---- Form submission -----------------------------------------------
 
+function setResultsLoading(loading) {
+  const results = $("resultsSection");
+  if (!results) return;
+  setHidden(results, false);
+  results.setAttribute("aria-busy", String(loading));
+}
+
+function focusResults() {
+  $("resultsTitle")?.focus({ preventScroll: true });
+}
+
 function bindForm() {
   const form = $("recommendForm");
   if (!form) return;
@@ -136,6 +145,7 @@ function bindForm() {
 
     setResultLead(tr("loadingLead"));
     setStatus(tr("searching"));
+    setResultsLoading(true);
     renderSkeleton(targetCount);
     setAgentMetrics(tr("metricsWorking"));
 
@@ -148,12 +158,15 @@ function bindForm() {
       // gracefully and refine its future estimates.
       timeline.finalize(data?.quality_notes?.stage_ms || {}, tr("stageDone"));
       renderResultPayload(data, text, { skipReplay: true });
+      focusResults();
     } catch (err) {
       timeline.cancel(tr("stageStopped"));
+      clearChildren($("recommendationList"));
       setStatus(err.message || tr("loadError"), true);
       setResultLead(tr("loadErrorLead"));
       setAgentMetrics(tr("metricsError"));
     } finally {
+      setResultsLoading(false);
       if (submitBtn) submitBtn.disabled = false;
     }
   });
@@ -181,10 +194,12 @@ async function checkSpotifyHealth() {
   setSpotifyBadge(tr("spotifyCheckingStatus"), "neutral");
   try {
     const data = await api.spotifyHealth();
+    setState("spotifyStatus", data.status || "unknown");
     if (data.status === "ok") setSpotifyBadge(tr("spotifyOnline"), "ok");
     else if (data.status === "mock-mode") setSpotifyBadge(tr("spotifyMock"), "warn");
     else setSpotifyBadge(tr("spotifyDegraded"), "warn");
   } catch {
+    setState("spotifyStatus", "unreachable");
     setSpotifyBadge(tr("spotifyUnreachable"), "error");
   }
 }
@@ -219,14 +234,6 @@ function boot() {
   bindPipelineGeometry();
   setAgentStage(0, tr("stageIdle"));
   setAgentMetrics(tr("metricsDefault"));
-  setDossierMode("Idle");
-  setDossierLatency(null);
-
-  $("healthBtn")?.addEventListener("click", () => {
-    checkLlmHealth();
-    checkSpotifyHealth();
-  });
-
   // Re-apply labels on lang change.
   onLangChange(() => {
     applyStaticLabels();

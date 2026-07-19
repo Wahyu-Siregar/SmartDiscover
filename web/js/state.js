@@ -5,6 +5,7 @@ const stateData = {
   lastResult: null,
   lastSourceText: "",
   spotifyConnected: false,
+  spotifyStatus: "checking",
   spotifyExpiresAt: 0,
 };
 

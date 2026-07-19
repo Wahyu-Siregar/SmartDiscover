@@ -1,4 +1,4 @@
-import { $ } from "./utils/dom.js";
+import { $, setHidden } from "./utils/dom.js";
 import { setState, getState } from "./state.js";
 import { tr } from "./i18n.js";
 import { renderTrackCards } from "./ui/cards.js";
@@ -7,7 +7,6 @@ import { renderQualityWarnings } from "./ui/qualityWarnings.js";
 import { renderAgenticPanel } from "./ui/agenticPanel.js";
 import { renderRefineBar } from "./ui/refineBar.js";
 import { renderExportBar } from "./ui/exportBar.js";
-import { setDossierLatency, setDossierMode } from "./ui/dossier.js";
 import { replayStagesFromMetrics } from "./ui/pipeline.js";
 
 export function setStatus(message, isError = false) {
@@ -24,6 +23,8 @@ export function setResultLead(text) {
 
 export function renderResultPayload(data, sourceText, opts = {}) {
   if (!data) return;
+
+  setHidden($("resultsSection"), false);
 
   setState("lastResult", data);
   setState("lastSourceText", sourceText || data.summary?.intent_text || "");
@@ -49,10 +50,6 @@ export function renderResultPayload(data, sourceText, opts = {}) {
   renderRefineBar(data);
   renderTrackCards(recs);
   renderAgenticPanel(notes);
-
-  // Dossier updates.
-  setDossierLatency(notes.stage_ms?.total);
-  setDossierMode(notes.llm_enabled ? (notes.agent_loop_enabled ? "Agent Loop" : "LLM Hybrid") : "Heuristic");
 
   // Pipeline replay only when called outside the form flow (e.g. /refine
   // or rerender on lang change). The form path runs an optimistic timeline.

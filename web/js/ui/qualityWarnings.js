@@ -1,7 +1,10 @@
 import { $, el, clearChildren, setHidden } from "../utils/dom.js";
 import { tr } from "../i18n.js";
+import { getState } from "../state.js";
 
 const WARNING_LABELS = {
+  demo_catalog: "demoCatalogNotice",
+  basic_matching: "basicMatchingNotice",
   low_profile_confidence: "qualityLowConfidence",
   candidate_pool_small: "qualitySmallPool",
   low_average_score: "qualityLowScore",
@@ -11,7 +14,9 @@ export function renderQualityWarnings(qualityNotes) {
   const banner = $("qualityWarnings");
   if (!banner) return;
 
-  const warnings = qualityNotes?.quality_warnings || [];
+  const warnings = [...(qualityNotes?.quality_warnings || [])];
+  if (getState("spotifyStatus") === "mock-mode") warnings.unshift("demo_catalog");
+  if (qualityNotes?.llm_enabled === false) warnings.unshift("basic_matching");
   if (!warnings.length) {
     setHidden(banner, true);
     clearChildren(banner);

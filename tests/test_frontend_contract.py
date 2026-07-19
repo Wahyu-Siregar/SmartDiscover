@@ -87,3 +87,21 @@ def test_primary_copy_is_plain_language_in_both_locales() -> None:
         "howStep3",
     ):
         assert i18n.count(f"{key}:") == 2
+
+
+def test_result_lifecycle_uses_existing_hidden_helper() -> None:
+    main = (ROOT / "web" / "js" / "main.js").read_text(encoding="utf-8")
+    render = (ROOT / "web" / "js" / "render.js").read_text(encoding="utf-8")
+    warnings = (
+        ROOT / "web" / "js" / "ui" / "qualityWarnings.js"
+    ).read_text(encoding="utf-8")
+    assert 'setHidden(results, false)' in main
+    assert 'results.setAttribute("aria-busy", String(loading))' in main
+    assert '$("resultsTitle")?.focus({ preventScroll: true })' in main
+    assert 'setHidden($("resultsSection"), false)' in render
+    assert 'clearChildren($("recommendationList"))' in main
+    assert 'setState("spotifyStatus", data.status || "unknown")' in main
+    assert 'getState("spotifyStatus") === "mock-mode"' in warnings
+    assert 'qualityNotes?.llm_enabled === false' in warnings
+    assert "demoCatalogNotice:" in I18N.read_text(encoding="utf-8")
+    assert "basicMatchingNotice:" in I18N.read_text(encoding="utf-8")
