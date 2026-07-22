@@ -49,7 +49,7 @@ export function ExportActions({ result, sourceText, connected, onDisconnected }:
   if (url) return <a className="inline-flex min-h-11 items-center" href={url} target="_blank" rel="noreferrer">{t("exportCreated")}</a>
 
   return <div className="mt-5 space-y-2">
-    <Button type="button" variant="outline" disabled={busy} onClick={() => { void exportPlaylist() }}>{busy ? t("exportCreating") : connected ? t("exportSave") : t("exportLogin")}</Button>
+    <Button type="button" variant="outline" className="min-h-11" disabled={busy} onClick={() => { void exportPlaylist() }}>{busy ? t("exportCreating") : connected ? t("exportSave") : t("exportLogin")}</Button>
     {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
   </div>
 }

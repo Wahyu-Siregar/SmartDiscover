@@ -16,16 +16,16 @@ interface ResultsSectionProps {
   result: RecommendResponse
   values?: PromptValues
   sourceText?: string
+  spotifyStatus?: string
   spotifyConnected?: boolean
   onSpotifyDisconnected?: () => void
   onRefined?: (result: RecommendResponse, sourceText: string) => void
 }
 
-export function ResultsSection({ result, values = { text: "", targetCount: 15, agenticMode: "auto" }, sourceText = "", spotifyConnected = false, onSpotifyDisconnected = () => {}, onRefined = () => {} }: ResultsSectionProps) {
+export function ResultsSection({ result, values = { text: "", targetCount: 15, agenticMode: "auto" }, sourceText = "", spotifyStatus, spotifyConnected = false, onSpotifyDisconnected = () => {}, onRefined = () => {} }: ResultsSectionProps) {
   const { t } = useI18n()
   const reducedMotion = useReducedMotion()
   const audio = useAudioPreview(result)
-  const spotifyStatus = typeof result.quality_notes.spotify_status === "string" ? result.quality_notes.spotify_status : undefined
 
   return <section className="result-section mx-auto w-full max-w-[760px] px-4 pb-12" aria-labelledby="results-title">
     <IntentSummary result={result} />

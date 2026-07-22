@@ -46,10 +46,10 @@ export function RefineBar({ result, values, onRefined }: RefineBarProps) {
   return <section className="mt-5 space-y-3">
     <div><p className="font-medium">{t("refineLabel")}</p><p className="text-sm text-muted-foreground">{t("refineHint")}</p></div>
     <div className="flex flex-col gap-2 sm:flex-row">
-      <Input aria-label={t("refineLabel")} value={text} maxLength={200} placeholder={t("refinePlaceholder")} disabled={busy} onChange={(event) => setText(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void submit() }} />
-      <Button type="button" disabled={busy} onClick={() => { void submit() }}>{busy ? t("refining") : t("refineButton")}</Button>
+      <Input className="min-h-11" aria-label={t("refineLabel")} value={text} maxLength={200} placeholder={t("refinePlaceholder")} disabled={busy} onChange={(event) => setText(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void submit() }} />
+      <Button type="button" className="min-h-11" disabled={busy} onClick={() => { void submit() }}>{busy ? t("refining") : t("refineButton")}</Button>
     </div>
     {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
-    <div className="flex flex-wrap gap-2">{suggestions.map((key) => <Button key={key} type="button" variant="outline" size="sm" disabled={busy} onClick={() => { const next = t(key); setText(next); void submit(next) }}>{t(key)}</Button>)}</div>
+    <div className="flex flex-wrap gap-2">{suggestions.map((key) => <Button key={key} type="button" variant="outline" size="sm" className="min-h-11" disabled={busy} onClick={() => { const next = t(key); setText(next); void submit(next) }}>{t(key)}</Button>)}</div>
   </section>
 }

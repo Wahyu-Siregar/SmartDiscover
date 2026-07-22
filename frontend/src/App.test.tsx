@@ -1,9 +1,17 @@
 import { cleanup, render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import { recommend } from "@/lib/api"
+import { recommend, spotifyHealth } from "@/lib/api"
+import type { RecommendResponse } from "@/types/recommendation"
 
-vi.mock("@/lib/api", () => ({ recommend: vi.fn(), authStatus: vi.fn().mockResolvedValue({ connected: false }) }))
+vi.mock("@/lib/api", () => ({ recommend: vi.fn(), authStatus: vi.fn().mockResolvedValue({ connected: false }), spotifyHealth: vi.fn().mockResolvedValue({ service: "spotify", status: "ok", ok: true, details: "reachable" }) }))
+
+const response = {
+  summary: { intent_text: "lagu untuk malam", target_count: 15 },
+  intent_profile: { mood: "calm", activity: "reading", genre: ["indie"], energy: "low", language: "id", locale: "id-ID", strict_locale: false, confidence: 0.8, target_audio: {}, seed_genres: [], decade: "", lyrical_intent: "", meaning_required: false },
+  query_strategy: {}, quality_notes: {},
+  recommendations: [{ rank: 1, title: "Song", artist: "Artist", track_id: "song", spotify_url: "", preview_url: "", why: "", score: 0.8 }],
+} as RecommendResponse
 
 function deferred<T>() {
   let resolve!: (value: T) => void
@@ -108,5 +116,17 @@ describe("App", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("Backend unavailable")
     expect(textbox()).toHaveValue("lagu untuk malam")
     expect(textbox()).not.toBeDisabled()
+  })
+
+  it("shows the localized demo notice from the Spotify health response", async () => {
+    vi.mocked(spotifyHealth).mockResolvedValueOnce({ service: "spotify", status: "mock-mode", ok: true, details: "credentials missing" })
+    vi.mocked(recommend).mockResolvedValueOnce(response)
+    const user = userEvent.setup()
+    await renderApp()
+
+    await user.type(textbox(), "lagu untuk malam")
+    await user.click(screen.getByRole("button", { name: /cari rekomendasi/i }))
+
+    expect(await screen.findByText(/mode demo aktif/i)).toBeInTheDocument()
   })
 })
