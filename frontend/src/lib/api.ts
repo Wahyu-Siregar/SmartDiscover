@@ -65,4 +65,3 @@ export function llmHealth() {
 export function spotifyHealth() {
   return jsonFetch<Record<string, unknown>>("/spotify/health")
 }
-
