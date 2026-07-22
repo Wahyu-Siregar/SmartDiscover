@@ -69,3 +69,8 @@ button, input, select, textarea { font: inherit; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
 }
+.result-section { display: grid; gap: 1rem; }
+.intent-summary { display: grid; gap: 0.6rem; border-top: 1px solid var(--border); padding-top: 1.5rem; }
+.result-card { min-width: 0; }
+.result-card [data-slot="card"] { background: color-mix(in srgb, var(--surface), var(--paper) 3%); box-shadow: 0 12px 36px rgb(0 0 0 / 0.16); }
+.result-rank { margin: 0; color: var(--coral); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em; }

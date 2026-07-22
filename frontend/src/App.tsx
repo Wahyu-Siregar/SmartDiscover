@@ -3,6 +3,7 @@ import { motion, useReducedMotion } from "motion/react"
 import { AppHeader } from "@/components/AppHeader"
 import { LoadingJourney } from "@/components/LoadingJourney"
 import { PromptComposer, type PromptValues } from "@/components/PromptComposer"
+import { ResultsSection } from "@/components/ResultsSection"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { useRecommendation } from "@/hooks/useRecommendation"
 import { I18nProvider, useI18n } from "@/lib/i18n"
@@ -11,7 +12,7 @@ const initialValues: PromptValues = { text: "", targetCount: 15, agenticMode: "a
 
 function AppShell() {
   const [values, setValues] = useState(initialValues)
-  const { view, error, submit } = useRecommendation()
+  const { view, error, result, submit } = useRecommendation()
   const reducedMotion = useReducedMotion()
   const loadingRef = useRef<HTMLElement>(null)
   const { t } = useI18n()
@@ -44,6 +45,7 @@ function AppShell() {
               </Alert>
             </div>
           )}
+          {view === "success" && result && <ResultsSection result={result} />}
         </section>
       )}
     </main>
