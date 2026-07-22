@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { recommend } from "@/lib/api"
 
-vi.mock("@/lib/api", () => ({ recommend: vi.fn() }))
+vi.mock("@/lib/api", () => ({ recommend: vi.fn(), authStatus: vi.fn().mockResolvedValue({ connected: false }) }))
 
 function deferred<T>() {
   let resolve!: (value: T) => void

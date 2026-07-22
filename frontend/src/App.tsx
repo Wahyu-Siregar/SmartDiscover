@@ -6,13 +6,16 @@ import { PromptComposer, type PromptValues } from "@/components/PromptComposer"
 import { ResultsSection } from "@/components/ResultsSection"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { useRecommendation } from "@/hooks/useRecommendation"
+import { useSpotifySession } from "@/hooks/useSpotifySession"
 import { I18nProvider, useI18n } from "@/lib/i18n"
 
 const initialValues: PromptValues = { text: "", targetCount: 15, agenticMode: "auto" }
 
 function AppShell() {
   const [values, setValues] = useState(initialValues)
-  const { view, error, result, submit } = useRecommendation()
+  const [sourceText, setSourceText] = useState("")
+  const { view, error, result, submit, replaceResult } = useRecommendation()
+  const spotify = useSpotifySession()
   const reducedMotion = useReducedMotion()
   const loadingRef = useRef<HTMLElement>(null)
   const { t } = useI18n()
@@ -24,28 +27,16 @@ function AppShell() {
 
   return (
     <main aria-label="SmartDiscover" className="app-shell">
-      <AppHeader />
-      <motion.section
-        layout
-        transition={reducedMotion ? { duration: 0 } : { duration: 0.4 }}
-        className={idle ? "hero" : "mx-auto w-full max-w-[760px] px-4 py-6"}
-        aria-labelledby={idle ? "hero-title" : undefined}
-      >
-        <PromptComposer mode={idle ? "hero" : "compact"} busy={view === "loading"} values={values} onValuesChange={setValues} onSubmit={(nextValues) => { void submit(nextValues) }} />
+      <AppHeader connected={spotify.connected} onSpotifyConnect={() => window.location.assign("/auth/login")} />
+      <motion.section layout transition={reducedMotion ? { duration: 0 } : { duration: 0.4 }} className={idle ? "hero" : "mx-auto w-full max-w-[760px] px-4 py-6"} aria-labelledby={idle ? "hero-title" : undefined}>
+        <PromptComposer mode={idle ? "hero" : "compact"} busy={view === "loading"} values={values} onValuesChange={setValues} onSubmit={(nextValues) => { setSourceText(nextValues.text); void submit(nextValues) }} />
       </motion.section>
 
       {!idle && (
         <section ref={loadingRef} aria-label={t("cinematicLoading")}>
           {view === "loading" && <LoadingJourney />}
-          {view === "error" && (
-            <div className="mx-auto w-full max-w-[760px] px-4 py-8">
-              <Alert variant="destructive">
-                <AlertTitle>{t("loadError")}</AlertTitle>
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            </div>
-          )}
-          {view === "success" && result && <ResultsSection result={result} />}
+          {view === "error" && <div className="mx-auto w-full max-w-[760px] px-4 py-8"><Alert variant="destructive"><AlertTitle>{t("loadError")}</AlertTitle><AlertDescription>{error}</AlertDescription></Alert></div>}
+          {view === "success" && result && <ResultsSection result={result} values={values} sourceText={sourceText} spotifyConnected={spotify.connected} onSpotifyDisconnected={spotify.disconnect} onRefined={(refined, prompt) => { setSourceText(prompt); replaceResult(refined) }} />}
         </section>
       )}
     </main>
