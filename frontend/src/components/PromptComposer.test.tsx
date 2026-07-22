@@ -1,6 +1,6 @@
-import { cleanup, render, screen } from "@testing-library/react"
+import { cleanup, fireEvent, render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import type { ComponentProps } from "react"
+import { useState, type ComponentProps } from "react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { I18nProvider } from "@/lib/i18n"
 import { PromptComposer, type PromptValues } from "./PromptComposer"
@@ -12,9 +12,14 @@ function renderComposer(overrides: Partial<ComponentProps<typeof PromptComposer>
   const onSubmit = vi.fn()
   const user = userEvent.setup()
 
+  function ControlledComposer() {
+    const [currentValues, setCurrentValues] = useState<PromptValues>(() => ({ ...values, ...overrides.values }))
+    return <PromptComposer mode="hero" busy={false} {...overrides} values={currentValues} onValuesChange={(nextValues) => { onValuesChange(nextValues); setCurrentValues(nextValues) }} onSubmit={onSubmit} />
+  }
+
   render(
     <I18nProvider>
-      <PromptComposer mode="hero" busy={false} values={values} onValuesChange={onValuesChange} onSubmit={onSubmit} {...overrides} />
+      <ControlledComposer />
     </I18nProvider>,
   )
 
@@ -29,11 +34,20 @@ describe("PromptComposer", () => {
     const { onSubmit, user } = renderComposer({ values: { ...values, text: "lagu untuk malam" } })
     const textarea = screen.getByRole("textbox", { name: /musik seperti apa/i })
 
-    await user.type(textarea, "{Shift>}{Enter}{/Shift}")
+    await user.type(textarea, "{Shift>}{Enter}{/Shift}setelah")
     expect(onSubmit).not.toHaveBeenCalled()
+    expect(textarea).toHaveValue("lagu untuk malam\nsetelah")
 
     await user.type(textarea, "{Enter}")
-    expect(onSubmit).toHaveBeenCalledWith({ text: "lagu untuk malam", targetCount: 15, agenticMode: "auto" })
+    expect(onSubmit).toHaveBeenCalledWith({ text: "lagu untuk malam\nsetelah", targetCount: 15, agenticMode: "auto" })
+  })
+
+  it("does not submit while Enter completes IME composition", () => {
+    const { onSubmit } = renderComposer({ values: { ...values, text: "lagu malam" } })
+
+    fireEvent.keyDown(screen.getByRole("textbox", { name: /musik seperti apa/i }), { key: "Enter", isComposing: true })
+
+    expect(onSubmit).not.toHaveBeenCalled()
   })
 
   it("fills the textarea from a quick prompt", async () => {
@@ -75,4 +89,3 @@ describe("PromptComposer", () => {
     expect(onSubmit).not.toHaveBeenCalled()
   })
 })
-

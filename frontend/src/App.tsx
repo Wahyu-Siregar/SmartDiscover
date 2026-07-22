@@ -11,7 +11,7 @@ function AppShell() {
   return (
     <main aria-label="SmartDiscover" className="app-shell">
       <AppHeader />
-      <section className="hero" aria-labelledby="music-intent">
+      <section className="hero" aria-labelledby="hero-title">
         <PromptComposer mode="hero" busy={false} values={values} onValuesChange={setValues} onSubmit={setValues} />
       </section>
     </main>

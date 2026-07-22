@@ -7,5 +7,6 @@ describe("App", () => {
     render(<App />)
     expect(screen.getByRole("main", { name: /smartdiscover/i })).toBeInTheDocument()
     expect(screen.getByRole("heading", { name: /temukan musik/i })).toBeInTheDocument()
+    expect(screen.getByRole("region", { name: /temukan musik/i })).toBeInTheDocument()
   })
 })

@@ -63,7 +63,7 @@ export function PromptComposer({ mode, busy, values, onValuesChange, onSubmit }:
         {mode === "hero" && (
           <div className="space-y-3">
             <p className="eyebrow">{t("heroKicker")}</p>
-            <h1>{t("heroTitle")}</h1>
+            <h1 id="hero-title">{t("heroTitle")}</h1>
             <p className="prompt-subtitle">{t("subtitle")}</p>
           </div>
         )}
