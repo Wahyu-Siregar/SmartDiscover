@@ -17,7 +17,10 @@ export function useAudioPreview(resultKey: unknown) {
     setElapsed(0)
   }, [])
 
-  useEffect(() => stop, [resultKey, stop])
+  useEffect(() => {
+    setUnavailableTrackId(null)
+    return stop
+  }, [resultKey, stop])
 
   const toggle = useCallback(async (trackId: string, previewUrl: string) => {
     const audio = audioRef.current ?? (audioRef.current = new Audio())

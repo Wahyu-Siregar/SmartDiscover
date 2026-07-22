@@ -1,5 +1,5 @@
-import { render, screen } from "@testing-library/react"
-import { describe, expect, it } from "vitest"
+import { cleanup, render, screen } from "@testing-library/react"
+import { afterEach, describe, expect, it } from "vitest"
 import { I18nProvider } from "@/lib/i18n"
 import type { RecommendResponse } from "@/types/recommendation"
 import { ResultsSection } from "./ResultsSection"
@@ -23,6 +23,7 @@ function renderResults(result = response) {
 }
 
 describe("ResultsSection", () => {
+  afterEach(cleanup)
   it("keeps the recommendation API order", () => {
     renderResults()
     const cards = screen.getAllByRole("article")
@@ -38,5 +39,10 @@ describe("ResultsSection", () => {
   it("shows the broaden-prompt fallback for an empty response", () => {
     renderResults({ ...response, recommendations: [] })
     expect(screen.getByText(/belum ada rekomendasi/i)).toBeInTheDocument()
+  })
+
+  it("uses localized copy for the result action slot", () => {
+    renderResults()
+    expect(screen.getByLabelText(/perbaiki rekomendasi/i)).toBeInTheDocument()
   })
 })

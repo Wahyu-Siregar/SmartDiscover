@@ -3,7 +3,7 @@ import { Pause, Play } from "lucide-react"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { formatDuration } from "@/lib/format"
+import { formatDuration, formatPercent } from "@/lib/format"
 import { useI18n } from "@/lib/i18n"
 import type { RecommendationItem } from "@/types/recommendation"
 import { TrackDetailDialog } from "./TrackDetailDialog"
@@ -39,8 +39,9 @@ export function SongCard({ track, onPreview, active, elapsed, unavailable }: {
         </CardHeader>
         <CardContent className="grid gap-3"><p>{track.why || t("whyFallback")}</p>
           <Collapsible>
-            <CollapsibleTrigger asChild><Button variant="ghost" className="justify-start px-0">{t("trackDetails")}</Button></CollapsibleTrigger>
+            <CollapsibleTrigger asChild><Button variant="ghost" className="min-h-11 justify-start px-0">{t("trackDetails")}</Button></CollapsibleTrigger>
             <CollapsibleContent className="grid gap-1 border-l border-border pl-3 text-sm text-muted-foreground">
+              <span>{t("matchLabel")}: {formatPercent(track.score)}</span>
               {value(audio.energy) && <span>{t("audioEnergy")}: {value(audio.energy)}</span>}
               {value(audio.valence) && <span>{t("audioMood")}: {value(audio.valence)}</span>}
               {value(audio.tempo) && <span>{t("audioTempo")}: {value(audio.tempo)}</span>}
@@ -51,10 +52,10 @@ export function SongCard({ track, onPreview, active, elapsed, unavailable }: {
           {unavailable && <p role="status" className="text-sm text-muted-foreground">{t("previewAutoplayError")}</p>}
         </CardContent>
         <CardFooter className="flex flex-wrap gap-2">
-          <Button disabled={!canPreview} onClick={onPreview} aria-label={canPreview ? active ? t("previewAriaPause") : t("previewAriaPlay") : t("previewAriaUnavailable")}>
+          <Button className="min-h-11" disabled={!canPreview} onClick={onPreview} aria-label={canPreview ? active ? t("previewAriaPause") : t("previewAriaPlay") : t("previewAriaUnavailable")}>
             {active ? <Pause /> : <Play />}{active ? `${t("previewPause")} ${formatDuration(elapsed)}` : canPreview ? t("previewPlay") : t("previewNoPreview")}
           </Button>
-          <Button variant="outline" asChild><a href={track.spotify_url} target="_blank" rel="noreferrer">{t("openSpotify")}</a></Button>
+          <Button variant="outline" className="min-h-11" asChild><a href={track.spotify_url} target="_blank" rel="noreferrer">{t("openSpotify")}</a></Button>
           <TrackDetailDialog track={track} />
         </CardFooter>
       </Card>

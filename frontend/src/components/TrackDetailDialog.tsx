@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { formatPercent } from "@/lib/format"
 import { useI18n } from "@/lib/i18n"
@@ -15,8 +15,9 @@ export function TrackDetailDialog({ track }: { track: RecommendationItem }) {
 
   return (
     <Dialog>
-      <DialogTrigger asChild><Button variant="outline">{t("detailButton")}</Button></DialogTrigger>
-      <DialogContent aria-describedby={undefined}>
+      <DialogTrigger asChild><Button variant="outline" className="min-h-11">{t("detailButton")}</Button></DialogTrigger>
+      <DialogContent showCloseButton={false}>
+        <DialogClose asChild><Button variant="ghost" size="icon" className="absolute top-2 right-2 min-h-11 min-w-11" aria-label={t("detailCloseAria")}>×</Button></DialogClose>
         <DialogHeader><DialogTitle>{t("detailTitle")}: {track.title}</DialogTitle></DialogHeader>
         <dl className="grid gap-3 text-sm">
           <div><dt className="text-muted-foreground">{t("detailScore")}</dt><dd>{formatPercent(track.score)}</dd></div>

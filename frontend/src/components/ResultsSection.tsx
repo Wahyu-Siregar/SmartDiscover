@@ -17,7 +17,7 @@ export function ResultsSection({ result }: { result: RecommendResponse }) {
   return (
     <section className="result-section mx-auto w-full max-w-[760px] px-4 pb-12" aria-labelledby="results-title">
       <IntentSummary result={result} />
-      <div className="result-actions" aria-label="Result actions" />
+      <div className="result-actions" aria-label={t("refineLabel")} />
       {warnings.map((warning) => <Alert key={warning} className="mb-3"><AlertDescription>{warning}</AlertDescription></Alert>)}
       <h2 id="results-title" className="font-display text-3xl">{t("resultsTitle")}</h2>
       {!result.recommendations.length ? <p className="mt-3 text-muted-foreground">{t("emptyNoRecommendation")}</p> : (

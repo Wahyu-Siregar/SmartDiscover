@@ -13,20 +13,34 @@ const track: RecommendationItem = {
 describe("SongCard", () => {
   afterEach(cleanup)
 
-  it("keeps secondary audio metadata collapsed and disables an unavailable preview", () => {
+  it("keeps secondary metadata collapsed, scores it when disclosed, and uses 44px controls", async () => {
+    const user = userEvent.setup()
     render(<I18nProvider><SongCard track={track} onPreview={vi.fn()} active={false} elapsed={0} unavailable={false} /></I18nProvider>)
-    expect(screen.getByRole("button", { name: /preview tidak tersedia/i })).toBeDisabled()
+    const disclosure = screen.getByRole("button", { name: /detail kecocokan/i })
+    const preview = screen.getByRole("button", { name: /preview tidak tersedia/i })
+    expect(preview).toBeDisabled()
+    expect(disclosure).toHaveClass("min-h-11")
+    expect(preview).toHaveClass("min-h-11")
+    expect(screen.getByRole("link", { name: /buka di spotify/i })).toHaveClass("min-h-11")
     expect(screen.queryByText(/energy/i)).not.toBeInTheDocument()
+
+    await user.click(disclosure)
+    expect(screen.getByText(/cocok: 91%/i)).toBeInTheDocument()
   })
 
-  it("opens accessible track details", async () => {
+  it("opens an associated accessible dialog with 44px controls", async () => {
     const user = userEvent.setup()
     render(<I18nProvider><SongCard track={{ ...track, preview_url: "https://example.test/one.mp3", lyric_signals: { summary: "gentle imagery" } }} onPreview={vi.fn()} active={false} elapsed={0} unavailable={false} /></I18nProvider>)
-    await user.click(screen.getByRole("button", { name: /^detail$/i }))
-    expect(screen.getByRole("dialog")).toHaveTextContent("91%")
-    expect(screen.getByRole("dialog")).toHaveTextContent(/tersedia/i)
-    expect(screen.getByRole("dialog")).toHaveTextContent("First reason")
-    expect(screen.getByRole("dialog")).toHaveTextContent("gentle imagery")
+    const trigger = screen.getByRole("button", { name: /^detail$/i })
+    expect(trigger).toHaveClass("min-h-11")
+    await user.click(trigger)
+    const dialog = screen.getByRole("dialog")
+    expect(dialog).toHaveTextContent("91%")
+    expect(dialog).toHaveTextContent(/tersedia/i)
+    expect(dialog).toHaveTextContent("First reason")
+    expect(dialog).toHaveTextContent("gentle imagery")
     expect(screen.getByRole("link", { name: "Buka di Spotify" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /tutup/i })).toHaveClass("min-h-11")
+    expect(dialog).toHaveAttribute("aria-describedby")
   })
 })
