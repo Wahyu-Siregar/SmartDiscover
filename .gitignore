@@ -30,3 +30,6 @@ Thumbs.db
 docs/
 
 benchmark_results/
+
+node_modules/
+frontend/dist/
