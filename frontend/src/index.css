@@ -1,1 +1,71 @@
 @import "tailwindcss";
+
+@theme inline {
+  --color-background: var(--canvas);
+  --color-foreground: var(--paper);
+  --color-card: var(--surface);
+  --color-card-foreground: var(--paper);
+  --color-popover: var(--surface);
+  --color-popover-foreground: var(--paper);
+  --color-primary: var(--coral);
+  --color-primary-foreground: var(--canvas);
+  --color-secondary: var(--surface-muted);
+  --color-secondary-foreground: var(--paper);
+  --color-muted: var(--surface-muted);
+  --color-muted-foreground: var(--ink-muted);
+  --color-accent: var(--surface-muted);
+  --color-accent-foreground: var(--paper);
+  --color-border: var(--border);
+  --color-input: var(--border);
+  --color-ring: var(--coral);
+  --color-destructive: #f38f82;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Fraunces", Georgia, serif;
+}
+
+:root {
+  --canvas: #15120f;
+  --surface: #211c17;
+  --surface-muted: #2b241e;
+  --paper: #f5eee3;
+  --ink-muted: #c9bcae;
+  --coral: #f67d68;
+  --border: #51453b;
+  color: var(--paper);
+  background: var(--canvas);
+  font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+html { background: var(--canvas); scroll-behavior: smooth; }
+body { min-width: 320px; margin: 0; background: var(--canvas); color: var(--paper); }
+button, input, select, textarea { font: inherit; }
+:focus-visible { outline: 3px solid color-mix(in srgb, var(--coral), transparent 35%); outline-offset: 3px; }
+
+.app-shell { min-height: 100svh; overflow-x: clip; }
+.app-header { display: flex; min-height: 72px; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.875rem clamp(1rem, 4vw, 4rem); }
+.brand { display: inline-flex; align-items: center; gap: 0.5rem; color: var(--paper); font-family: var(--font-display); font-size: 1.25rem; font-weight: 700; text-decoration: none; }
+.header-controls, .language-switch, .quick-prompts { display: flex; align-items: center; gap: 0.5rem; }
+.language-switch { border: 1px solid var(--border); border-radius: 0.75rem; }
+.language-switch [aria-pressed="true"] { color: var(--coral); }
+.hero { display: grid; min-height: calc(100svh - 72px); place-items: center; padding: 2rem 1rem 4rem; }
+.prompt-composer { width: min(100%, 760px); border: 1px solid var(--border); border-radius: 1.5rem; background: var(--surface); padding: clamp(1.25rem, 4vw, 2.5rem); box-shadow: 0 24px 80px rgb(0 0 0 / 0.22); }
+.prompt-composer--compact { padding: 1rem; }
+.prompt-composer h1 { max-width: 14ch; margin: 0; font-family: var(--font-display); font-size: clamp(2.5rem, 7vw, 5rem); line-height: 0.98; letter-spacing: -0.045em; }
+.eyebrow { margin: 0; color: var(--coral); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
+.prompt-subtitle { max-width: 58ch; margin: 0; color: var(--ink-muted); }
+.quick-prompts { flex-wrap: wrap; }
+.advanced-settings { border-top: 1px solid var(--border); }
+.advanced-content { display: grid; gap: 1rem; padding: 0.5rem 0 0.25rem; }
+
+@media (max-width: 360px) {
+  .app-header { align-items: flex-start; padding-inline: 0.75rem; }
+  .header-controls { flex-wrap: wrap; justify-content: flex-end; }
+  .header-controls > button { width: 100%; }
+  .prompt-composer { border-radius: 1rem; padding: 1rem; }
+  .prompt-composer h1 { font-size: 2.3rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}
