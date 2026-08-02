@@ -2,10 +2,11 @@ import logging
 import secrets
 import time
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 import httpx
 from fastapi import Depends, FastAPI, HTTPException, Request, Response
-from fastapi.responses import FileResponse, RedirectResponse
+from fastapi.responses import FileResponse, PlainTextResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 from pydantic import BaseModel, Field
@@ -24,6 +25,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+ROOT_DIR = Path(__file__).resolve().parents[1]
+FRONTEND_DIST = ROOT_DIR / "frontend" / "dist"
 
 # --- Cookie / session helpers ---------------------------------------------
 
@@ -115,7 +118,7 @@ app.add_exception_handler(RateLimitExceeded, lambda req, exc: Response(
     status_code=429,
     media_type="application/json",
 ))
-app.mount("/static", StaticFiles(directory="web"), name="static")
+app.mount("/assets", StaticFiles(directory=FRONTEND_DIST / "assets", check_dir=False), name="assets")
 
 # Backward-compatible module-level aliases (used by tests and external imports).
 pipeline = app.state.pipeline
@@ -155,8 +158,14 @@ class CreatePlaylistRequest(BaseModel):
 
 
 @app.get("/", include_in_schema=False)
-def dashboard() -> FileResponse:
-    return FileResponse("web/index.html")
+def dashboard() -> Response:
+    index = FRONTEND_DIST / "index.html"
+    if index.is_file():
+        return FileResponse(index)
+    return PlainTextResponse(
+        "Frontend build unavailable. Run: cd frontend && npm install && npm run build",
+        status_code=503,
+    )
 
 
 @app.get("/health")
