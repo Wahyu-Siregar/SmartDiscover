@@ -1,4 +1,5 @@
 import json
+import re
 from pathlib import Path
 
 from fastapi.testclient import TestClient
@@ -21,6 +22,16 @@ def test_dashboard_serves_built_index_or_clear_build_error() -> None:
     assert response.status_code in {200, 503}
     if response.status_code == 503:
         assert "npm run build" in response.text
+
+
+def test_dashboard_serves_emitted_favicon() -> None:
+    dashboard = client.get("/")
+    favicon = re.search(r'<link rel="icon"[^>]+href="([^"]+)"', dashboard.text)
+
+    assert dashboard.status_code == 200
+    assert favicon is not None
+    assert favicon.group(1).startswith("/assets/")
+    assert client.get(favicon.group(1)).status_code == 200
 
 
 def test_dashboard_serves_index_from_frontend_build(monkeypatch, tmp_path: Path) -> None:
