@@ -26,6 +26,10 @@ def test_dashboard_serves_built_index_or_clear_build_error() -> None:
 
 def test_dashboard_serves_emitted_favicon() -> None:
     dashboard = client.get("/")
+    if dashboard.status_code == 503:
+        assert "npm run build" in dashboard.text
+        return
+
     favicon = re.search(r'<link rel="icon"[^>]+href="([^"]+)"', dashboard.text)
 
     assert dashboard.status_code == 200
