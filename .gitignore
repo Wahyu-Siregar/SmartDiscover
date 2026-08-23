@@ -33,3 +33,5 @@ benchmark_results/
 
 node_modules/
 frontend/dist/
+
+graphify-out/

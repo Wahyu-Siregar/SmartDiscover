@@ -17,6 +17,12 @@ def test_frontend_stack_and_scripts_are_declared() -> None:
     assert {"build", "typecheck", "test"} <= package["scripts"].keys()
 
 
+def test_vite_proxies_fastapi_health() -> None:
+    config = (ROOT / "frontend/vite.config.ts").read_text(encoding="utf-8")
+
+    assert '"/health"' in config
+
+
 def test_dashboard_serves_built_index_or_clear_build_error() -> None:
     response = client.get("/")
     assert response.status_code in {200, 503}

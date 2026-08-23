@@ -235,6 +235,34 @@ No Spotify account data is stored by SmartDiscover. The Spotify access token liv
 
 ### 4) Run the Application
 
+For local development, run the FastAPI API and React/Vite frontend in separate terminals:
+
+```powershell
+# terminal 1
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --port 8000
+
+# terminal 2
+Set-Location frontend
+npm install
+npm run dev
+```
+
+Vite proxies API and OAuth requests to FastAPI. Spotify OAuth remains handled by FastAPI with browser cookies, so the frontend does not need a token environment variable.
+
+For production-like local serving, build the frontend and let FastAPI serve it:
+
+```powershell
+Set-Location frontend
+npm ci
+npm run build
+Set-Location ..
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --port 8000
+```
+
+The integrated server is available at http://127.0.0.1:8000/.
+
+If you only need the backend while developing an API route:
+
 ```powershell
 uvicorn app.main:app --reload
 ```
@@ -367,7 +395,7 @@ Outputs aggregate intent metrics plus `meaning_required_match`, `lyrical_intent_
 - Music source: Spotify Web API
 - Optional lyric metadata: Genius API
 - Embeddings: Sentence Transformers + multilingual E5
-- Frontend: HTML, CSS, JavaScript
+- Frontend: React, TypeScript, Vite, Tailwind CSS, Motion
 - Deployment: Vercel Large Functions
 
 ## License

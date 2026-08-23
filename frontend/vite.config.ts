@@ -11,7 +11,7 @@ export default defineConfig({
   resolve: { alias: { "@": path.resolve(__dirname, "./src") } },
   server: {
     proxy: Object.fromEntries(
-      ["/recommend", "/refine", "/auth", "/create-playlist", "/llm", "/spotify"]
+      ["/health", "/recommend", "/refine", "/auth", "/create-playlist", "/llm", "/spotify"]
         .map((route) => [route, { target: backend, changeOrigin: false }]),
     ),
   },
