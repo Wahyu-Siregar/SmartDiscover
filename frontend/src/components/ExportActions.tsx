@@ -46,9 +46,9 @@ export function ExportActions({ result, sourceText, connected, onDisconnected }:
   }
 
   if (!result.recommendations.length) return null
-  if (url) return <a className="inline-flex min-h-11 items-center" href={url} target="_blank" rel="noreferrer">{t("exportCreated")}</a>
+  if (url) return <a className="export-created" href={url} target="_blank" rel="noreferrer">{t("exportCreated")}</a>
 
-  return <div className="mt-5 space-y-2">
+  return <div className="export-actions">
     <Button type="button" variant="outline" className="min-h-11" disabled={busy} onClick={() => { void exportPlaylist() }}>{busy ? t("exportCreating") : connected ? t("exportSave") : t("exportLogin")}</Button>
     {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
   </div>

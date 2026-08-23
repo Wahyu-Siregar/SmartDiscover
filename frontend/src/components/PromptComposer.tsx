@@ -1,6 +1,6 @@
 import { useState, type KeyboardEvent } from "react"
 import { motion, useReducedMotion } from "motion/react"
-import { ChevronDown, Sparkles } from "lucide-react"
+import { ChevronDown, Play } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Input } from "@/components/ui/input"
@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { useI18n } from "@/lib/i18n"
 import type { AgenticMode } from "@/types/recommendation"
 import { HealthStatus } from "./HealthStatus"
+import { SignalLine } from "./SignalLine"
 
 export interface PromptValues {
   text: string
@@ -61,22 +62,23 @@ export function PromptComposer({ mode, busy, values, onValuesChange, onSubmit }:
     <motion.div id="prompt" layoutId="prompt-composer" transition={reducedMotion ? { duration: 0 } : { duration: 0.4 }} className={`prompt-composer prompt-composer--${mode}`}>
       <form onSubmit={(event) => { event.preventDefault(); submit() }} className="space-y-5" noValidate>
         {mode === "hero" && (
-          <div className="space-y-3">
+          <header className="composer-hero">
             <p className="eyebrow">{t("heroKicker")}</p>
             <h1 id="hero-title">{t("heroTitle")}</h1>
             <p className="prompt-subtitle">{t("subtitle")}</p>
-          </div>
+            <SignalLine mode="hero" />
+          </header>
         )}
 
         <div className="space-y-2">
-          <Label htmlFor="music-intent">{t("intentLabel")}</Label>
-          <Textarea id="music-intent" value={values.text} onChange={(event) => { setError(null); onValuesChange({ ...values, text: event.target.value }) }} onKeyDown={handleEnter} placeholder={t("intentPlaceholder")} aria-invalid={Boolean(error)} aria-describedby={error ? "intent-error" : undefined} disabled={busy} className="min-h-28 resize-y" />
+          <Label htmlFor="music-intent" className="composer-label">{t("intentLabel")}</Label>
+          <Textarea id="music-intent" value={values.text} onChange={(event) => { setError(null); onValuesChange({ ...values, text: event.target.value }) }} onKeyDown={handleEnter} placeholder={t("intentPlaceholder")} aria-invalid={Boolean(error)} aria-describedby={error ? "intent-error" : undefined} disabled={busy} className="composer-sheet resize-y" />
           {error && <p id="intent-error" role="alert" className="text-sm text-destructive">{error}</p>}
         </div>
 
         {mode === "hero" && (
           <div className="space-y-2">
-            <p className="text-sm font-medium">{t("quickPromptLabel")}</p>
+            <p className="composer-label">{t("quickPromptLabel")}</p>
             <div className="quick-prompts">
               {quickPrompts.map((prompt) => (
                 <Button key={prompt.label} type="button" variant="outline" className="min-h-11" disabled={busy} onClick={() => { setError(null); onValuesChange({ ...values, text: prompt.text }) }}>
@@ -97,11 +99,11 @@ export function PromptComposer({ mode, busy, values, onValuesChange, onSubmit }:
           <CollapsibleContent className="advanced-content">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="target-count">{t("targetCountLabel")}</Label>
+                <Label htmlFor="target-count" className="composer-label">{t("targetCountLabel")}</Label>
                 <Input id="target-count" type="number" min="1" max="50" value={values.targetCount} onChange={(event) => onValuesChange({ ...values, targetCount: Number(event.target.value) || 1 })} disabled={busy} className="min-h-11" />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="agentic-mode">{t("agenticModeLabel")}</Label>
+                <Label htmlFor="agentic-mode" className="composer-label">{t("agenticModeLabel")}</Label>
                 <Select value={values.agenticMode} onValueChange={(agenticMode) => onValuesChange({ ...values, agenticMode: agenticMode as AgenticMode })} disabled={busy}>
                   <SelectTrigger id="agentic-mode" aria-label={t("agenticModeLabel")} className="min-h-11 w-full"><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -116,8 +118,8 @@ export function PromptComposer({ mode, busy, values, onValuesChange, onSubmit }:
           </CollapsibleContent>
         </Collapsible>
 
-        <Button type="submit" className="min-h-11 w-full sm:w-auto" disabled={busy}>
-          <Sparkles aria-hidden="true" className="size-4" />
+        <Button type="submit" className="composer-submit min-h-11 w-full sm:w-auto" disabled={busy}>
+          <Play aria-hidden="true" className="size-4" />
           {mode === "compact" ? t("compactSearch") : t("submit")}
         </Button>
       </form>

@@ -1,11 +1,11 @@
 import { motion } from "motion/react"
 import { Pause, Play } from "lucide-react"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { formatDuration, formatPercent } from "@/lib/format"
 import { useI18n } from "@/lib/i18n"
 import type { RecommendationItem } from "@/types/recommendation"
+import { SignalLine } from "./SignalLine"
 import { TrackDetailDialog } from "./TrackDetailDialog"
 
 export const cardVariants = {
@@ -30,35 +30,40 @@ export function SongCard({ track, onPreview, active, elapsed, unavailable }: {
   const canPreview = Boolean(track.preview_url) && !unavailable
 
   return (
-    <motion.article variants={cardVariants} className="result-card" aria-label={`${track.rank}. ${track.title}`}>
-      <Card>
-        <CardHeader>
-          <p className="result-rank">{String(track.rank).padStart(2, "0")}</p>
-          <CardTitle className="font-display text-xl">{track.title}</CardTitle>
-          <p className="text-muted-foreground">{track.artist}</p>
-        </CardHeader>
-        <CardContent className="grid gap-3"><p>{track.why || t("whyFallback")}</p>
-          <Collapsible>
-            <CollapsibleTrigger asChild><Button variant="ghost" className="min-h-11 justify-start px-0">{t("trackDetails")}</Button></CollapsibleTrigger>
-            <CollapsibleContent className="grid gap-1 border-l border-border pl-3 text-sm text-muted-foreground">
-              <span>{t("matchLabel")}: {formatPercent(track.score)}</span>
-              {value(audio.energy) && <span>{t("audioEnergy")}: {value(audio.energy)}</span>}
-              {value(audio.valence) && <span>{t("audioMood")}: {value(audio.valence)}</span>}
-              {value(audio.tempo) && <span>{t("audioTempo")}: {value(audio.tempo)}</span>}
-              {lyric && <span>{t("lyricSignal")}: {lyric}</span>}
-              {!Object.keys(audio).length && !lyric && <span>{t("noAudioDetails")}</span>}
-            </CollapsibleContent>
-          </Collapsible>
-          {unavailable && <p role="status" className="text-sm text-muted-foreground">{t("previewAutoplayError")}</p>}
-        </CardContent>
-        <CardFooter className="flex flex-wrap gap-2">
+    <motion.article variants={cardVariants} className="track-row" aria-label={`${track.rank}. ${track.title}`}>
+      <div className="track-row__panel">
+        <div className="track-row__main">
+          <p className="track-row__rank">{String(track.rank).padStart(2, "0")}</p>
+          <div className="track-row__body">
+            <h3 className="track-row__title">{track.title}</h3>
+            <p className="track-row__artist">{track.artist}</p>
+            <p className="track-row__why">{track.why || t("whyFallback")}</p>
+            <Collapsible className="track-row__details">
+              <CollapsibleTrigger asChild><Button variant="ghost" className="track-row__details-trigger min-h-11 justify-start px-0">{t("trackDetails")}</Button></CollapsibleTrigger>
+              <CollapsibleContent className="track-row__details-content">
+                <span>{t("matchLabel")}: {formatPercent(track.score)}</span>
+                {value(audio.energy) && <span>{t("audioEnergy")}: {value(audio.energy)}</span>}
+                {value(audio.valence) && <span>{t("audioMood")}: {value(audio.valence)}</span>}
+                {value(audio.tempo) && <span>{t("audioTempo")}: {value(audio.tempo)}</span>}
+                {lyric && <span>{t("lyricSignal")}: {lyric}</span>}
+                {!Object.keys(audio).length && !lyric && <span>{t("noAudioDetails")}</span>}
+              </CollapsibleContent>
+            </Collapsible>
+          </div>
+          <div className="track-row__side">
+            <p className="track-row__score">{formatPercent(track.score)}</p>
+            <SignalLine mode="mini" track={track} active={active} />
+          </div>
+        </div>
+        {unavailable && <p role="status" className="track-row__unavailable">{t("previewAutoplayError")}</p>}
+        <div className="track-row__actions">
           <Button className="min-h-11" disabled={!canPreview} onClick={onPreview} aria-label={canPreview ? active ? t("previewAriaPause") : t("previewAriaPlay") : t("previewAriaUnavailable")}>
             {active ? <Pause /> : <Play />}{active ? `${t("previewPause")} ${formatDuration(elapsed)}` : canPreview ? t("previewPlay") : t("previewNoPreview")}
           </Button>
           <Button variant="outline" className="min-h-11" asChild><a href={track.spotify_url} target="_blank" rel="noreferrer">{t("openSpotify")}</a></Button>
           <TrackDetailDialog track={track} />
-        </CardFooter>
-      </Card>
+        </div>
+      </div>
     </motion.article>
   )
 }

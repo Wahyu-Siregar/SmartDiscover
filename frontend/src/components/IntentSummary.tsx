@@ -12,8 +12,8 @@ export function IntentSummary({ result }: { result: RecommendResponse }) {
   return (
     <section className="intent-summary" aria-label={t("intentDetected")}>
       <p className="eyebrow">{t("intentDetected")}</p>
-      <p className="font-display text-xl">{summary.intent_text || "—"}</p>
-      <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
+      <p className="intent-summary__text">{summary.intent_text || "—"}</p>
+      <div className="intent-summary__matrix">
         <Badge variant="outline">{t("statMood")}: {profile.mood}</Badge>
         <Badge variant="outline">{t("statActivity")}: {profile.activity}</Badge>
         <Badge variant="outline">{t("statCount")}: {count}</Badge>

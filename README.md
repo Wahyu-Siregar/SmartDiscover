@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="web/assets/logo.svg" alt="SmartDiscover Logo" width="170" />
+  <img src="frontend/src/assets/logo.svg" alt="SmartDiscover Logo" width="170" />
   <h1>SmartDiscover</h1>
   <p><strong>Multi-Agent Music Discovery Assistant for Spotify</strong></p>
 
@@ -8,6 +8,7 @@
     <img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-0F766E?style=for-the-badge&logo=fastapi&logoColor=white" />
     <img alt="Spotify API" src="https://img.shields.io/badge/Spotify_API-1DB954?style=for-the-badge&logo=spotify&logoColor=white" />
     <img alt="OpenRouter" src="https://img.shields.io/badge/OpenRouter-LLM-111827?style=for-the-badge" />
+    <img alt="React" src="https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=white" />
   </p>
 
   <p>
@@ -17,10 +18,11 @@
   </p>
 
   <p>
+    <a href="#screenshots">Screenshots</a> &middot;
+    <a href="#why-smartdiscover">Why SmartDiscover</a> &middot;
     <a href="#agentic-architecture">Architecture</a> &middot;
     <a href="#quick-setup">Setup</a> &middot;
     <a href="#deploy-on-vercel">Deploy</a> &middot;
-    <a href="#demo">Demo</a> &middot;
     <a href="#api-endpoints">API</a> &middot;
     <a href="#tests-and-eval-harness">Tests</a>
   </p>
@@ -28,9 +30,19 @@
 
 ---
 
-> "I need calm and focused music for late-night study sessions."
+> "Ceritakan suasana hatimu — kami carikan musiknya."
 >
-> SmartDiscover transforms natural language prompts into relevant, ranked music recommendations that are ready to become a playlist.
+> SmartDiscover transforms natural language prompts — in Indonesian or English — into relevant, ranked music recommendations that are ready to be previewed, refined, and saved as a Spotify playlist. A multi-agent pipeline splits the work into intent analysis, candidate retrieval, semantic matching, ranking, and presentation so the results feel natural and contextual, not like keyword search.
+
+## Screenshots
+
+<div align="center">
+  <img src="assets/screenshots/1.png" alt="SmartDiscover hero — describe your mood, pick a quick prompt, and search" width="100%" />
+  <br /><br />
+  <img src="assets/screenshots/2.png" alt="SmartDiscover pipeline progress — the signal line tracks each agent stage" width="100%" />
+  <br /><br />
+  <img src="assets/screenshots/3.png" alt="SmartDiscover results — a tracklist with match score, mini waveform, preview, refine, and export" width="100%" />
+</div>
 
 ## Why SmartDiscover
 
@@ -44,6 +56,17 @@ SmartDiscover is a multi-agent music discovery pipeline with optional agentic or
 | Orchestration | Optionally calls tools to improve the candidate pool | Three-iteration and 30-second hard limits |
 | Ranking | Combines audio features, genres, semantic signals, and diversity | Deterministic fallback and minimum-output guard |
 | Delivery | Explains results, previews tracks, and creates private playlists | OAuth token remains in a signed HttpOnly cookie |
+
+### Frontend
+
+The React frontend (`frontend/`) is designed as a late-night listening console:
+
+- **Bilingual** — Indonesian and English interfaces, switched from the header.
+- **Describe, don't search** — a lyric-sheet composer for your mood; quick prompts for instant ideas.
+- **Signal line** — the hero waveform becomes the live pipeline progress while searching, and every track row carries a mini waveform drawn from that track's real audio features (energy, valence, tempo). It animates as an equalizer while a preview plays.
+- **Tracklist results** — ranked rows with match score, 30-second previews, per-track reasoning, and a matrix line summarizing the detected intent (mood, activity, count, confidence).
+- **Refine and export** — follow-up refinements ("lebih ceria, lebih lambat...") re-run the pipeline excluding seen tracks, and one click saves the result as a private Spotify playlist.
+- **Accessibility** — keyboard-visible focus, reduced-motion support, 44px touch targets, and proper ARIA roles throughout.
 
 ## Agentic Architecture
 
@@ -300,21 +323,13 @@ Use the **Agent Mode** selector in the form:
 
 The **Behind the scenes** panel shows the effective mode, loop status, tool path, trace summaries, and fallback reason.
 
-## Demo
-
-<div align="center">
-  <img src="assets/demo/demo-1.gif" alt="SmartDiscover Demo 1" width="100%" />
-  <br /><br />
-  <img src="assets/demo/demo-1.2.gif" alt="SmartDiscover Demo 1.2" width="100%" />
-</div>
-
----
-
 ## Example User Prompts
 
 - "Late-night coding tracks that keep me focused but not sleepy"
 - "A bright and upbeat vibe for an afternoon road trip"
 - "Relaxing background music for reading, preferably instrumental"
+- "Musik fokus untuk bekerja tanpa distraksi"
+- "Lagu hangat untuk menemani hujan malam"
 
 ## Create Spotify Playlists
 
@@ -341,11 +356,11 @@ You can change playlist visibility later from your Spotify account.
 
 ## Audio Preview Behavior
 
-SmartDiscover includes a mini preview player in each recommendation card.
+SmartDiscover includes a mini preview player in each recommendation row.
 
-- If Spotify provides `preview_url`, the card shows an active **Play/Pause** preview control.
+- If Spotify provides `preview_url`, the row shows an active **Play/Pause** preview control and the mini waveform animates as an equalizer while it plays.
 - If `preview_url` is missing, SmartDiscover applies a backend fallback by checking Spotify Embed metadata (`__NEXT_DATA__`) to recover `audioPreview.url` when available.
-- If no preview is found after fallback, the card still shows a disabled **No Preview** state so users can see that preview is unavailable for that track.
+- If no preview is found after fallback, the row still shows a disabled **No Preview** state so users can see that preview is unavailable for that track.
 
 Notes:
 
@@ -368,11 +383,18 @@ If Spotify credentials are missing, the application uses deterministic mock cand
 | `GET`  | `/auth/login` → `/auth/callback` | Spotify OAuth (HttpOnly cookie session, CSRF-protected). |
 | `GET`  | `/auth/status` | Returns `{connected, expires_at}`. |
 | `POST` | `/auth/logout` | Clears the session cookie. |
-| `POST` | `/create-playlist` | Saves the current selection as a Spotify playlist (requires session cookie). |
+| `POST` | `/create-playlist` | Creates a private Spotify playlist from the current selection (requires session cookie). |
 
 ## Tests and Eval Harness
 
-Run the unit tests:
+Run the frontend unit tests:
+
+```powershell
+Set-Location frontend
+npm test
+```
+
+Run the backend unit tests:
 
 ```powershell
 python -m pytest -q
@@ -395,7 +417,8 @@ Outputs aggregate intent metrics plus `meaning_required_match`, `lyrical_intent_
 - Music source: Spotify Web API
 - Optional lyric metadata: Genius API
 - Embeddings: Sentence Transformers + multilingual E5
-- Frontend: React, TypeScript, Vite, Tailwind CSS, Motion
+- Frontend: React 19, TypeScript, Vite, Tailwind CSS v4, Motion, Radix UI
+- Fonts: Gambetta, General Sans (Fontshare), JetBrains Mono
 - Deployment: Vercel Large Functions
 
 ## License

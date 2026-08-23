@@ -5,7 +5,7 @@ export function HealthStatus() {
   const { t } = useI18n()
 
   return (
-    <p className="flex items-center gap-2 text-sm text-muted-foreground" aria-live="polite">
+    <p className="health-status flex items-center gap-2 text-sm text-muted-foreground" aria-live="polite">
       <Activity aria-hidden="true" className="size-4 text-emerald-500" />
       {t("llmChecking")}
     </p>

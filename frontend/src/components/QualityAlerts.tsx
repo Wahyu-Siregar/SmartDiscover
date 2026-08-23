@@ -17,7 +17,7 @@ export function QualityAlerts({ qualityNotes, spotifyStatus }: { qualityNotes: R
   const uniqueWarnings = [...new Set(warnings)]
   if (!uniqueWarnings.length) return null
 
-  return <div className="mb-4 space-y-2" role="status">{uniqueWarnings.map((warning) => {
+  return <div className="quality-alerts" role="status">{uniqueWarnings.map((warning) => {
     const key = warning.split(" ")[0] as keyof typeof warningKeys
     return <Alert key={warning}><AlertDescription>{key in warningKeys ? t(warningKeys[key]) : warning}</AlertDescription></Alert>
   })}</div>
